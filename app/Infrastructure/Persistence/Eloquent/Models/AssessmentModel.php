@@ -25,12 +25,11 @@ class AssessmentModel extends Model
 
     public $incrementing = false;
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     /** @var array<string, string> */
     protected $casts = [
         'completed_subtests' => 'array',
-        'created_at'         => 'datetime',
         'completed_at'       => 'datetime',
     ];
 
@@ -44,7 +43,6 @@ class AssessmentModel extends Model
         'id',
         'status',
         'completed_subtests',
-        'created_at',
         'completed_at',
     ];
 
