@@ -1,0 +1,77 @@
+services:
+
+  # ─── PHP-FPM アプリケーション ───────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    container_name: wais_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - ./docker/app/php.ini:/usr/local/etc/php/conf.d/local.ini
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - wais_net
+
+  # ─── Nginx ─────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: wais_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - wais_net
+
+  # ─── MySQL ─────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.4
+    container_name: wais_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: wais_checker
+      MYSQL_USER: wais
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - wais_mysql_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wais_net
+
+  # ─── Node.js（Vite ビルド）─────────────────────────────────────
+  node:
+    image: node:22-alpine
+    container_name: wais_node
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    command: sh -c "npm install && npm run build"
+    profiles:
+      - build
+
+networks:
+  wais_net:
+    driver: bridge
+
+volumes:
+  wais_mysql_data:
