@@ -34,6 +34,11 @@ class AssessmentModel extends Model
         'completed_at'       => 'datetime',
     ];
 
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'completed_subtests' => '[]',
+    ];
+
     /** @var list<string> */
     protected $fillable = [
         'id',

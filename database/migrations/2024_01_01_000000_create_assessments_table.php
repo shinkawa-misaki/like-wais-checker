@@ -12,7 +12,7 @@ return new class () extends Migration {
         Schema::create('assessments', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('status', 20)->default('in_progress');
-            $table->json('completed_subtests')->default('[]');
+            $table->json('completed_subtests');
             $table->timestamp('created_at');
             $table->timestamp('completed_at')->nullable();
         });
