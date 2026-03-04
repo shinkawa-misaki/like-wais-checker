@@ -1,4 +1,4 @@
-.PHONY: up down restart build setup migrate seed test phpstan phpcs frontend logs shell
+.PHONY: up down restart build setup migrate seed test test-js phpstan phpcs frontend logs shell
 
 # ─── Docker 操作 ─────────────────────────────────────────────────
 
@@ -32,9 +32,11 @@ logs:
 
 # ─── Laravel セットアップ ─────────────────────────────────────────
 
-## 初回セットアップ（.env 作成 → マイグレーション → シーダー → フロント）
+## 初回セットアップ（イメージビルド → .env 作成 → composer install → key:generate → migrate → seed → フロント）
 setup:
 	@test -f .env || (cp .env.example .env && echo ".env を作成しました")
+	$(MAKE) build
+	docker compose exec app composer install --no-interaction --prefer-dist --optimize-autoloader
 	docker compose exec app php artisan key:generate
 	$(MAKE) migrate
 	$(MAKE) seed
@@ -63,6 +65,14 @@ migrate-seed:
 ## PHPUnit テストを実行する
 test:
 	docker compose exec app php artisan test
+
+## Vitest（フロントエンド）テストを実行する
+test-js:
+	npm test
+
+## Vitest カバレッジレポートを生成する
+test-js-coverage:
+	npm run test:coverage
 
 ## PHPStan (level 8) を実行する
 phpstan:

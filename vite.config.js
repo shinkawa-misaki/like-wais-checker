@@ -22,4 +22,20 @@ export default defineConfig({
             '@': '/resources/js',
         },
     },
+    test: {
+        environment: 'jsdom',
+        globals: true,
+        setupFiles: ['resources/js/tests/setup.js'],
+        include: ['resources/js/tests/**/*.{test,spec}.js'],
+        coverage: {
+            provider: 'v8',
+            reporter: ['text', 'html'],
+            include: [
+                'resources/js/stores/**',
+                'resources/js/api/**',
+                'resources/js/components/**',
+                'resources/js/views/**',
+            ],
+        },
+    },
 });
