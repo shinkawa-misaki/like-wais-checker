@@ -6,1074 +6,403 @@ namespace Database\Seeders;
 
 use App\Infrastructure\Persistence\Eloquent\Models\QuestionModel;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class QuestionSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
-        QuestionModel::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        $this->seedSimilarities();
+        $this->seedVocabulary();
+        $this->seedPatternRecognition();
+        $this->seedMatrixReasoning();
+        $this->seedDigitSpan();
+        $this->seedArithmetic();
+        $this->seedSymbolSearch();
+        $this->seedCoding();
+    }
 
-        foreach ($this->getQuestions() as $question) {
-            QuestionModel::create(array_merge(['id' => (string) Str::uuid()], $question));
+    /**
+     * A: 類似（Similarities）- 30問のプールから10問ランダム選択
+     */
+    private function seedSimilarities(): void
+    {
+        $questionPool = [
+            ['content' => 'リンゴとバナナの共通点は何ですか？', 'hint' => '食べ物の種類を考えてください'],
+            ['content' => '犬と猫の共通点は何ですか？', 'hint' => '生き物の分類を考えてください'],
+            ['content' => '椅子とテーブルの共通点は何ですか？', 'hint' => '用途を考えてください'],
+            ['content' => '鉛筆とペンの共通点は何ですか？', 'hint' => '何に使うものか考えてください'],
+            ['content' => '太陽と月の共通点は何ですか？', 'hint' => '空にあるものとして'],
+            ['content' => '車と自転車の共通点は何ですか？', 'hint' => '移動手段として'],
+            ['content' => '本と新聞の共通点は何ですか？', 'hint' => '情報を得る手段'],
+            ['content' => '冬と夏の共通点は何ですか？', 'hint' => '季節として'],
+            ['content' => '山と谷の共通点は何ですか？', 'hint' => '地形として'],
+            ['content' => '赤と青の共通点は何ですか？', 'hint' => '色として'],
+            ['content' => '笑いと涙の共通点は何ですか？', 'hint' => '感情表現'],
+            ['content' => '音楽と絵画の共通点は何ですか？', 'hint' => '芸術として'],
+            ['content' => '朝と夜の共通点は何ですか？', 'hint' => '一日の時間帯'],
+            ['content' => '医師と看護師の共通点は何ですか？', 'hint' => '職業として'],
+            ['content' => '電話とメールの共通点は何ですか？', 'hint' => '通信手段'],
+            ['content' => '川と海の共通点は何ですか？', 'hint' => '水のある場所'],
+            ['content' => '鳥と飛行機の共通点は何ですか？', 'hint' => '空を飛ぶもの'],
+            ['content' => '靴と帽子の共通点は何ですか？', 'hint' => '身につけるもの'],
+            ['content' => '春と秋の共通点は何ですか？', 'hint' => '季節の特徴'],
+            ['content' => '鏡とカメラの共通点は何ですか？', 'hint' => '映すもの'],
+            ['content' => '時計とカレンダーの共通点は何ですか？', 'hint' => '時間を表すもの'],
+            ['content' => '橋とトンネルの共通点は何ですか？', 'hint' => '交通インフラ'],
+            ['content' => '雨と雪の共通点は何ですか？', 'hint' => '天気現象'],
+            ['content' => 'ドアと窓の共通点は何ですか？', 'hint' => '建物の一部'],
+            ['content' => '鍵と暗証番号の共通点は何ですか？', 'hint' => 'セキュリティ'],
+            ['content' => '砂糖と塩の共通点は何ですか？', 'hint' => '調味料'],
+            ['content' => '教師と生徒の共通点は何ですか？', 'hint' => '学習に関わる'],
+            ['content' => '誕生日と結婚記念日の共通点は何ですか？', 'hint' => '記念日'],
+            ['content' => '野球とサッカーの共通点は何ですか？', 'hint' => 'スポーツ'],
+            ['content' => '詩と小説の共通点は何ですか？', 'hint' => '文学作品'],
+        ];
+
+        // ランダムに10問選択
+        $selectedQuestions = $this->selectRandom($questionPool, 10);
+
+        foreach ($selectedQuestions as $index => $question) {
+            QuestionModel::create([
+                'id' => (string) Str::uuid(),
+                'subtest_type' => 'A',
+                'sequence_number' => $index + 1,
+                'content' => $question['content'],
+                'question_type' => 'free_text',
+                'correct_answer' => null,
+                'options' => null,
+                'max_points' => 2,
+                'hint' => $question['hint'],
+            ]);
         }
     }
 
-    /** @return array<int, array<string, mixed>> */
-    private function getQuestions(): array
+    /**
+     * B: 語彙（Vocabulary）- 30問のプールから10問ランダム選択
+     */
+    private function seedVocabulary(): void
     {
-        return array_merge(
-            $this->getSimilaritiesQuestions(),
-            $this->getVocabularyQuestions(),
-            $this->getPatternRecognitionQuestions(),
-            $this->getMatrixReasoningQuestions(),
-            $this->getDigitSpanQuestions(),
-            $this->getArithmeticQuestions(),
-            $this->getSymbolSearchQuestions(),
-            $this->getCodingQuestions(),
-        );
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function getSimilaritiesQuestions(): array
-    {
-        // VCI-A: 類似（Similarities）10問 各0/1/2点 満点20
-        return [
-            [
-                'subtest_type'    => 'A',
-                'sequence_number' => 1,
-                'content'         => '「犬」と「猫」の共通点は何ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '哺乳類・ペット・動物',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：哺乳類のペット（抽象的カテゴリ） / 1点：動物・生き物（やや具体的） / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'A',
-                'sequence_number' => 2,
-                'content'         => '「法律」と「ルール」の共通点は何ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '行動を規制・制約する規範・社会的規則',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：行動を縛る社会的規範 / 1点：決まり・約束事 / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'A',
-                'sequence_number' => 3,
-                'content'         => '「希望」と「計画」の共通点は何ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '将来・未来に向けた思考・志向性',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：未来へ向けた意志や志向性 / 1点：将来のこと・前向きなもの / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'A',
-                'sequence_number' => 4,
-                'content'         => '「喜び」と「悲しみ」の共通点は何ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '感情・情動・心の状態',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：感情・情動（抽象カテゴリ） / 1点：気持ち・心の動き / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'A',
-                'sequence_number' => 5,
-                'content'         => '「山」と「海」の共通点は何ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '自然の地形・大きな自然環境・観光地・地球の地形',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：自然の大地形・地球の地理的特徴 / 1点：自然・大きな場所 / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'A',
-                'sequence_number' => 6,
-                'content'         => '「勇気」と「忍耐」の共通点は何ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '困難に向き合う精神的強さ・美徳・徳目',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：困難に立ち向かう精神的徳目 / 1点：強さ・良い心の性質 / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'A',
-                'sequence_number' => 7,
-                'content'         => '「音楽」と「絵画」の共通点は何ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '芸術・表現活動・アート',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：芸術・創造的表現活動 / 1点：趣味・文化活動 / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'A',
-                'sequence_number' => 8,
-                'content'         => '「時計」と「カレンダー」の共通点は何ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '時間を計測・管理するツール・道具',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：時間を管理・計測するツール / 1点：時間に関係する道具 / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'A',
-                'sequence_number' => 9,
-                'content'         => '「民主主義」と「王政」の共通点は何ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '政治体制・国家統治の仕組み・システム',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：国家統治の政治体制・システム / 1点：政治の仕組み・国の形 / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'A',
-                'sequence_number' => 10,
-                'content'         => '「詩」と「小説」の共通点は何ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '文学・言語による芸術表現・文芸作品',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：言語を使った文学・芸術表現 / 1点：書いたもの・文章作品 / 0点：ズレている',
-            ],
-        ];
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function getVocabularyQuestions(): array
-    {
-        // VCI-B: 語彙（Vocabulary）10問 各0/1/2点 満点20
-        return [
-            [
-                'subtest_type'    => 'B',
-                'sequence_number' => 1,
-                'content'         => '「抽象」とはどういう意味ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '具体的な事物から共通の性質を引き抜いて概念化すること',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：概念化・本質の抽出に言及 / 1点：具体的でない・ぼんやりしている / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'B',
-                'sequence_number' => 2,
-                'content'         => '「矛盾」とはどういう意味ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '二つの事柄が論理的に両立しないこと・前後の主張が食い違うこと',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：論理的不整合・両立不可に言及 / 1点：つじつまが合わない・おかしい / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'B',
-                'sequence_number' => 3,
-                'content'         => '「文脈」とはどういう意味ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '言葉や出来事を理解するための背景・前後の流れや状況',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：背景・前後関係・流れに言及 / 1点：前後の話・状況 / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'B',
-                'sequence_number' => 4,
-                'content'         => '「倫理」とはどういう意味ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '人間として正しい行動の基準・道徳的規範の体系',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：道徳的規範・善悪の基準体系 / 1点：道徳・善悪の判断 / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'B',
-                'sequence_number' => 5,
-                'content'         => '「仮説」とはどういう意味ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '検証前の推測・証明されていない仮の説明・前提として設定した考え',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：未検証の暫定的説明・推論の前提 / 1点：まだ確かめていない考え / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'B',
-                'sequence_number' => 6,
-                'content'         => '「効率」とはどういう意味ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '最小限の資源・時間・労力で最大の成果を得る度合い',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：投入と産出の比率・コスパの概念 / 1点：無駄なくできること / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'B',
-                'sequence_number' => 7,
-                'content'         => '「概念」とはどういう意味ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '事物の共通特性を抽象化してまとめた思考の単位・心的表象',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：抽象化された思考単位・カテゴリ / 1点：ものごとの考え方・イメージ / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'B',
-                'sequence_number' => 8,
-                'content'         => '「優先順位」とはどういう意味ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '複数の事柄において重要度や緊急度に応じて処理する順番を決めること',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：重要度・緊急度による順序付け / 1点：何を先にやるかの順番 / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'B',
-                'sequence_number' => 9,
-                'content'         => '「パラドックス」とはどういう意味ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '一見正しい前提から出発しながら矛盾した結論に達する論理的逆説',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：論理的逆説・見かけ上の矛盾 / 1点：不思議なつじつまの合わなさ / 0点：ズレている',
-            ],
-            [
-                'subtest_type'    => 'B',
-                'sequence_number' => 10,
-                'content'         => '「メタ認知」とはどういう意味ですか？',
-                'question_type'   => 'free_text',
-                'correct_answer'  => '自分自身の思考・認知プロセスを客観的に観察・評価・制御する能力',
-                'options'         => null,
-                'max_points'      => 2,
-                'hint'            => '2点：自分の思考を俯瞰する能力 / 1点：自分のことを客観的に見ること / 0点：ズレている',
-            ],
-        ];
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function getPatternRecognitionQuestions(): array
-    {
-        // PRI-C: 規則発見（Pattern Recognition）12問 各1点 満点12
-        return [
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 1,
-                'content'         => "▲ ■ ▲ ■ ▲ ？\nA) ▲　B) ■　C) ●　D) ◆",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '▲', 'B' => '■', 'C' => '●', 'D' => '◆'],
-                'max_points'      => 1,
-                'hint'            => '▲と■が交互に並んでいます',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 2,
-                'content'         => "1, 2, 4, 7, 11, ？\nA) 14　B) 15　C) 16　D) 17",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '14', 'B' => '15', 'C' => '16', 'D' => '17'],
-                'max_points'      => 1,
-                'hint'            => '差が1, 2, 3, 4と増えています',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 3,
-                'content'         => "A, C, E, G, ？\nA) H　B) I　C) J　D) K",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => 'H', 'B' => 'I', 'C' => 'J', 'D' => 'K'],
-                'max_points'      => 1,
-                'hint'            => '1つ飛ばしのアルファベット',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 4,
-                'content'         => "2, 6, 18, 54, ？\nA) 108　B) 144　C) 162　D) 180",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '108', 'B' => '144', 'C' => '162', 'D' => '180'],
-                'max_points'      => 1,
-                'hint'            => '各項を3倍しています',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 5,
-                'content'         => "○ ○○ ○○○ ○○○○ ？\nA) ○○○○　B) ○○○○○　C) ○○○○○○　D) ○○○○○○○",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '4個', 'B' => '5個', 'C' => '6個', 'D' => '7個'],
-                'max_points'      => 1,
-                'hint'            => '1個ずつ増えています',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 6,
-                'content'         => "100, 50, 25, 12.5, ？\nA) 6　B) 6.25　C) 7　D) 8",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '6', 'B' => '6.25', 'C' => '7', 'D' => '8'],
-                'max_points'      => 1,
-                'hint'            => '各項を2で割っています',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 7,
-                'content'         => "月, 水, 金, ？\nA) 土　B) 日　C) 火　D) 木",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'A',
-                'options'         => ['A' => '土', 'B' => '日', 'C' => '火', 'D' => '木'],
-                'max_points'      => 1,
-                'hint'            => '1つ飛ばしの曜日',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 8,
-                'content'         => "1, 1, 2, 3, 5, 8, ？\nA) 11　B) 12　C) 13　D) 14",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '11', 'B' => '12', 'C' => '13', 'D' => '14'],
-                'max_points'      => 1,
-                'hint'            => '前の2つを足したものが次になります（フィボナッチ数列）',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 9,
-                'content'         => "Z, Y, X, W, ？\nA) T　B) U　C) V　D) S",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => 'T', 'B' => 'U', 'C' => 'V', 'D' => 'S'],
-                'max_points'      => 1,
-                'hint'            => 'アルファベットを逆順に並べています',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 10,
-                'content'         => "3, 9, 27, 81, ？\nA) 162　B) 243　C) 324　D) 729",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '162', 'B' => '243', 'C' => '324', 'D' => '729'],
-                'max_points'      => 1,
-                'hint'            => '3の累乗（3倍ずつ）',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 11,
-                'content'         => "1, 4, 9, 16, 25, ？\nA) 30　B) 34　C) 36　D) 49",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '30', 'B' => '34', 'C' => '36', 'D' => '49'],
-                'max_points'      => 1,
-                'hint'            => '1²=1, 2²=4, 3²=9... 平方数の並び',
-            ],
-            [
-                'subtest_type'    => 'C',
-                'sequence_number' => 12,
-                'content'         => "2, 5, 10, 17, 26, ？\nA) 35　B) 36　C) 37　D) 38",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '35', 'B' => '36', 'C' => '37', 'D' => '38'],
-                'max_points'      => 1,
-                'hint'            => 'n²+1 の数列',
-            ],
-        ];
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function getMatrixReasoningQuestions(): array
-    {
-        // PRI-D: 簡易マトリクス（Matrix Reasoning）10問 各1点 満点10
-        return [
-            [
-                'subtest_type'    => 'D',
-                'sequence_number' => 1,
-                'content'         => "縦の規則：+1、横の規則：×2\n\n| 1 | 2 | 4 |\n| 2 | 4 | 8 |\n| 3 | 6 | ？ |\n\nA) 10　B) 12　C) 9　D) 11",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '10', 'B' => '12', 'C' => '9', 'D' => '11'],
-                'max_points'      => 1,
-                'hint'            => '3行目：3, 6, 12（×2の規則）',
-            ],
-            [
-                'subtest_type'    => 'D',
-                'sequence_number' => 2,
-                'content'         => "縦の規則：+3、横の規則：+1\n\n| 1 | 2 | 3 |\n| 4 | 5 | 6 |\n| 7 | 8 | ？ |\n\nA) 8　B) 9　C) 10　D) 11",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '8', 'B' => '9', 'C' => '10', 'D' => '11'],
-                'max_points'      => 1,
-                'hint'            => '7の次は8、8の次は9',
-            ],
-            [
-                'subtest_type'    => 'D',
-                'sequence_number' => 3,
-                'content'         => "縦の規則：×2、横の規則：+10\n\n| 1  | 11 | 21 |\n| 2  | 12 | 22 |\n| 4  | 14 | ？  |\n\nA) 22　B) 24　C) 26　D) 28",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '22', 'B' => '24', 'C' => '26', 'D' => '28'],
-                'max_points'      => 1,
-                'hint'            => '3行目：4, 14, 24（+10の規則）',
-            ],
-            [
-                'subtest_type'    => 'D',
-                'sequence_number' => 4,
-                'content'         => "各行の合計が同じになる\n\n| 3 | 5 | 7 |\n| 2 | 6 | 7 |\n| 4 | 5 | ？ |\n\nA) 5　B) 6　C) 7　D) 8",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '5', 'B' => '6', 'C' => '7', 'D' => '8'],
-                'max_points'      => 1,
-                'hint'            => '各行の合計：15, 15, 15 → 4+5+？=15',
-            ],
-            [
-                'subtest_type'    => 'D',
-                'sequence_number' => 5,
-                'content'         => "縦の規則：-1、横の規則：×3\n\n| 9 | 27 | 81 |\n| 8 | 24 | 72 |\n| 7 | 21 | ？  |\n\nA) 42　B) 56　C) 63　D) 70",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '42', 'B' => '56', 'C' => '63', 'D' => '70'],
-                'max_points'      => 1,
-                'hint'            => '7×9=63（横×3、または21×3）',
-            ],
-            [
-                'subtest_type'    => 'D',
-                'sequence_number' => 6,
-                'content'         => "形と数の二軸規則\n行：△ □ ○（形）、列：1個 2個 3個（個数）\n\n3行3列目には何が入りますか？\nA) △が3個　B) □が3個　C) ○が3個　D) ○が2個",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '△が3個', 'B' => '□が3個', 'C' => '○が3個', 'D' => '○が2個'],
-                'max_points'      => 1,
-                'hint'            => '3行目は○、3列目は3個',
-            ],
-            [
-                'subtest_type'    => 'D',
-                'sequence_number' => 7,
-                'content'         => "各列の積が同じ\n\n| 2 | 3 | 6  |\n| 4 | 3 | 12 |\n| 6 | 3 | ？  |\n\nA) 15　B) 16　C) 18　D) 20",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '15', 'B' => '16', 'C' => '18', 'D' => '20'],
-                'max_points'      => 1,
-                'hint'            => '各行：左×中=右 → 6×3=18',
-            ],
-            [
-                'subtest_type'    => 'D',
-                'sequence_number' => 8,
-                'content'         => "縦：+2、横：+5\n\n| 1  | 6  | 11 |\n| 3  | 8  | 13 |\n| 5  | 10 | ？  |\n\nA) 13　B) 14　C) 15　D) 16",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '13', 'B' => '14', 'C' => '15', 'D' => '16'],
-                'max_points'      => 1,
-                'hint'            => '3行目：5, 10, 15（+5の規則）',
-            ],
-            [
-                'subtest_type'    => 'D',
-                'sequence_number' => 9,
-                'content'         => "色と大きさの二軸\n行：赤・青・黄、列：小・中・大\n\n2行3列目（青・大）に入るのは？\nA) 赤の大きい図形　B) 青の大きい図形　C) 黄の大きい図形　D) 青の中くらいの図形",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '赤の大', 'B' => '青の大', 'C' => '黄の大', 'D' => '青の中'],
-                'max_points'      => 1,
-                'hint'            => '2行=青、3列=大',
-            ],
-            [
-                'subtest_type'    => 'D',
-                'sequence_number' => 10,
-                'content'         => "各行：左+中=右\n\n| 5  | 7  | 12 |\n| 8  | 4  | 12 |\n| 6  | ？  | 12 |\n\nA) 4　B) 5　C) 6　D) 7",
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '4', 'B' => '5', 'C' => '6', 'D' => '7'],
-                'max_points'      => 1,
-                'hint'            => '6+？=12 → ？=6',
-            ],
-        ];
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function getDigitSpanQuestions(): array
-    {
-        // WMI-E: 数唱（Digit Span）18系列 各1点 満点18
-        // 順唱6系列、逆唱6系列、並べ替え6系列
-        return [
-            // 順唱（Forward）
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 1,
-                'content'         => "【順唱】次の数字をそのまま繰り返してください：\n5 - 8 - 2",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '582',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '聞いた順番通りに答えてください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 2,
-                'content'         => "【順唱】次の数字をそのまま繰り返してください：\n6 - 1 - 9 - 4",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '6194',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '聞いた順番通りに答えてください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 3,
-                'content'         => "【順唱】次の数字をそのまま繰り返してください：\n3 - 7 - 1 - 8 - 5",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '37185',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '聞いた順番通りに答えてください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 4,
-                'content'         => "【順唱】次の数字をそのまま繰り返してください：\n9 - 2 - 6 - 4 - 1 - 7",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '926417',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '聞いた順番通りに答えてください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 5,
-                'content'         => "【順唱】次の数字をそのまま繰り返してください：\n4 - 8 - 3 - 5 - 9 - 2 - 1",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '4835921',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '聞いた順番通りに答えてください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 6,
-                'content'         => "【順唱】次の数字をそのまま繰り返してください：\n7 - 1 - 3 - 9 - 6 - 4 - 2 - 8",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '71396428',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '聞いた順番通りに答えてください',
-            ],
-            // 逆唱（Backward）
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 7,
-                'content'         => "【逆唱】次の数字を逆から答えてください：\n3 - 7",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '73',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '逆から読んでください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 8,
-                'content'         => "【逆唱】次の数字を逆から答えてください：\n5 - 1 - 8",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '815',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '逆から読んでください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 9,
-                'content'         => "【逆唱】次の数字を逆から答えてください：\n4 - 9 - 2 - 6",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '6294',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '逆から読んでください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 10,
-                'content'         => "【逆唱】次の数字を逆から答えてください：\n1 - 7 - 3 - 8 - 5",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '58371',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '逆から読んでください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 11,
-                'content'         => "【逆唱】次の数字を逆から答えてください：\n6 - 2 - 9 - 4 - 1 - 7",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '714926',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '逆から読んでください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 12,
-                'content'         => "【逆唱】次の数字を逆から答えてください：\n8 - 3 - 5 - 1 - 9 - 2 - 6",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '6291538',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '逆から読んでください',
-            ],
-            // 並べ替え（Sequencing）
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 13,
-                'content'         => "【並べ替え】次の数字を小さい順に並べて答えてください：\n4 - 1 - 7",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '147',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '小さい順に並べてください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 14,
-                'content'         => "【並べ替え】次の数字を小さい順に並べて答えてください：\n9 - 3 - 6 - 1",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '1369',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '小さい順に並べてください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 15,
-                'content'         => "【並べ替え】次の数字を小さい順に並べて答えてください：\n5 - 8 - 2 - 7 - 3",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '23578',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '小さい順に並べてください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 16,
-                'content'         => "【並べ替え】次の数字を小さい順に並べて答えてください：\n6 - 1 - 4 - 9 - 2 - 8",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '124689',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '小さい順に並べてください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 17,
-                'content'         => "【並べ替え】次の数字を小さい順に並べて答えてください：\n7 - 3 - 9 - 1 - 5 - 4 - 2",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '1234579',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '小さい順に並べてください',
-            ],
-            [
-                'subtest_type'    => 'E',
-                'sequence_number' => 18,
-                'content'         => "【並べ替え】次の数字を小さい順に並べて答えてください：\n8 - 2 - 5 - 1 - 9 - 3 - 6 - 4",
-                'question_type'   => 'sequence',
-                'correct_answer'  => '12345689',
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '小さい順に並べてください',
-            ],
-        ];
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function getArithmeticQuestions(): array
-    {
-        // WMI-F: 暗算（Arithmetic）10問 各1点 満点10
-        return [
-            [
-                'subtest_type'    => 'F',
-                'sequence_number' => 1,
-                'content'         => '17 + 28 - 9 = ？',
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '34', 'B' => '35', 'C' => '36', 'D' => '37'],
-                'max_points'      => 1,
-                'hint'            => '17+28=45, 45-9=36',
-            ],
-            [
-                'subtest_type'    => 'F',
-                'sequence_number' => 2,
-                'content'         => '84 ÷ 7 + 6 = ？',
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '17', 'B' => '18', 'C' => '19', 'D' => '20'],
-                'max_points'      => 1,
-                'hint'            => '84÷7=12, 12+6=18',
-            ],
-            [
-                'subtest_type'    => 'F',
-                'sequence_number' => 3,
-                'content'         => '200の15%は？',
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '20', 'B' => '25', 'C' => '30', 'D' => '35'],
-                'max_points'      => 1,
-                'hint'            => '200×0.15=30',
-            ],
-            [
-                'subtest_type'    => 'F',
-                'sequence_number' => 4,
-                'content'         => '80の3/4は？',
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '55', 'B' => '60', 'C' => '65', 'D' => '70'],
-                'max_points'      => 1,
-                'hint'            => '80×3÷4=60',
-            ],
-            [
-                'subtest_type'    => 'F',
-                'sequence_number' => 5,
-                'content'         => '132 ÷ 11 × 4 = ？',
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'A',
-                'options'         => ['A' => '48', 'B' => '52', 'C' => '56', 'D' => '60'],
-                'max_points'      => 1,
-                'hint'            => '132÷11=12, 12×4=48',
-            ],
-            [
-                'subtest_type'    => 'F',
-                'sequence_number' => 6,
-                'content'         => '25 × 12 = ？',
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'D',
-                'options'         => ['A' => '280', 'B' => '290', 'C' => '295', 'D' => '300'],
-                'max_points'      => 1,
-                'hint'            => '25×12=25×10+25×2=300',
-            ],
-            [
-                'subtest_type'    => 'F',
-                'sequence_number' => 7,
-                'content'         => '1000から37を3回引くと？',
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '887', 'B' => '889', 'C' => '891', 'D' => '893'],
-                'max_points'      => 1,
-                'hint'            => '37×3=111, 1000-111=889',
-            ],
-            [
-                'subtest_type'    => 'F',
-                'sequence_number' => 8,
-                'content'         => '450の20%引きは？',
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'A',
-                'options'         => ['A' => '360', 'B' => '370', 'C' => '380', 'D' => '390'],
-                'max_points'      => 1,
-                'hint'            => '450×0.8=360',
-            ],
-            [
-                'subtest_type'    => 'F',
-                'sequence_number' => 9,
-                'content'         => '2の10乗は？',
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'C',
-                'options'         => ['A' => '512', 'B' => '768', 'C' => '1024', 'D' => '2048'],
-                'max_points'      => 1,
-                'hint'            => '2→4→8→16→32→64→128→256→512→1024',
-            ],
-            [
-                'subtest_type'    => 'F',
-                'sequence_number' => 10,
-                'content'         => '時速72kmで走る車が15分で進む距離は何km？',
-                'question_type'   => 'multiple_choice',
-                'correct_answer'  => 'B',
-                'options'         => ['A' => '16km', 'B' => '18km', 'C' => '20km', 'D' => '22km'],
-                'max_points'      => 1,
-                'hint'            => '72km/h × 15/60h = 72 × 0.25 = 18km',
-            ],
-        ];
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function getSymbolSearchQuestions(): array
-    {
-        // PSI-G: 探索（Symbol Search）24問 90秒
-        // ターゲット2文字が検索列に「両方ある」なら○、片方/両方ないなら×
-        return [
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 1,
-                'content'         => "ターゲット：【A】【Z】\n検索列：P Q A R Z S T\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'AとZの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 2,
-                'content'         => "ターゲット：【B】【M】\n検索列：C D E F G H I J K\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'BとMの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 3,
-                'content'         => "ターゲット：【X】【Y】\n検索列：W X Y Z A B C\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'XとYの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 4,
-                'content'         => "ターゲット：【F】【K】\n検索列：A B C D E F G H I\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'FとKの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 5,
-                'content'         => "ターゲット：【R】【T】\n検索列：P Q R S T U V\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'RとTの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 6,
-                'content'         => "ターゲット：【L】【N】\n検索列：A C E G I K M O Q\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'LとNの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 7,
-                'content'         => "ターゲット：【D】【H】\n検索列：B D F H J L N\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'DとHの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 8,
-                'content'         => "ターゲット：【V】【W】\n検索列：S T U X Y Z A\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'VとWの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 9,
-                'content'         => "ターゲット：【C】【J】\n検索列：A B C G J K L M\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'CとJの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 10,
-                'content'         => "ターゲット：【E】【P】\n検索列：A B C D F G H I\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'EとPの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 11,
-                'content'         => "ターゲット：【G】【Q】\n検索列：E F G H Q R S T\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'GとQの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 12,
-                'content'         => "ターゲット：【I】【O】\n検索列：A E U B C D F G\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'IとOの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 13,
-                'content'         => "ターゲット：【S】【U】\n検索列：Q R S T U V W\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'SとUの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 14,
-                'content'         => "ターゲット：【J】【N】\n検索列：H I K L M O P Q\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'JとNの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 15,
-                'content'         => "ターゲット：【A】【M】\n検索列：C M A F G H I J\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'AとMの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 16,
-                'content'         => "ターゲット：【K】【Z】\n検索列：W X Y A B C D E\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'KとZの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 17,
-                'content'         => "ターゲット：【B】【T】\n検索列：B M N O T P Q R\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'BとTの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 18,
-                'content'         => "ターゲット：【F】【L】\n検索列：D E G H I J K M\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'FとLの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 19,
-                'content'         => "ターゲット：【P】【V】\n検索列：N O P Q R S T U V W\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'PとVの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 20,
-                'content'         => "ターゲット：【H】【R】\n検索列：A B C D E F G I J K\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'HとRの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 21,
-                'content'         => "ターゲット：【E】【W】\n検索列：C D E F W X Y Z\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'EとWの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 22,
-                'content'         => "ターゲット：【O】【X】\n検索列：L M N P Q R S T U\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'OとXの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 23,
-                'content'         => "ターゲット：【I】【U】\n検索列：G H I J K T U V W\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '○',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'IとUの両方を探してください',
-            ],
-            [
-                'subtest_type'    => 'G',
-                'sequence_number' => 24,
-                'content'         => "ターゲット：【C】【Y】\n検索列：A B D E F G H X Z\n両方ありますか？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => '×',
-                'options'         => ['○' => '両方ある', '×' => '片方または両方ない'],
-                'max_points'      => 1,
-                'hint'            => 'CとYの両方を探してください',
-            ],
-        ];
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function getCodingQuestions(): array
-    {
-        // PSI-H: 符号化（Coding）60問 90秒
-        // 対応表：1=A, 2=B, 3=C, 4=D, 5=E, 6=F, 7=G, 8=H, 9=I
-        // 数字列を文字列に変換する
-        $codingPairs = [
-            ['3', 'C'], ['7', 'G'], ['1', 'A'], ['5', 'E'], ['9', 'I'],
-            ['2', 'B'], ['8', 'H'], ['4', 'D'], ['6', 'F'], ['1', 'A'],
-            ['5', 'E'], ['3', 'C'], ['9', 'I'], ['7', 'G'], ['2', 'B'],
-            ['6', 'F'], ['4', 'D'], ['8', 'H'], ['1', 'A'], ['5', 'E'],
-            ['7', 'G'], ['2', 'B'], ['9', 'I'], ['3', 'C'], ['6', 'F'],
-            ['4', 'D'], ['8', 'H'], ['1', 'A'], ['5', 'E'], ['3', 'C'],
-            ['9', 'I'], ['6', 'F'], ['2', 'B'], ['7', 'G'], ['4', 'D'],
-            ['8', 'H'], ['1', 'A'], ['5', 'E'], ['3', 'C'], ['9', 'I'],
-            ['2', 'B'], ['7', 'G'], ['6', 'F'], ['4', 'D'], ['8', 'H'],
-            ['1', 'A'], ['5', 'E'], ['3', 'C'], ['9', 'I'], ['7', 'G'],
-            ['2', 'B'], ['6', 'F'], ['4', 'D'], ['8', 'H'], ['1', 'A'],
-            ['5', 'E'], ['3', 'C'], ['9', 'I'], ['7', 'G'], ['2', 'B'],
+        $questionPool = [
+            ['word' => '勇気', 'hint' => '恐怖に打ち勝つ心'],
+            ['word' => '寛容', 'hint' => '他人を受け入れる心'],
+            ['word' => '誠実', 'hint' => '嘘をつかず正直であること'],
+            ['word' => '慎重', 'hint' => '注意深く行動すること'],
+            ['word' => '楽観的', 'hint' => '物事を明るく考える'],
+            ['word' => '協力', 'hint' => '力を合わせること'],
+            ['word' => '創造', 'hint' => '新しいものを作り出すこと'],
+            ['word' => '独立', 'hint' => '自分で決めて行動すること'],
+            ['word' => '調和', 'hint' => 'バランスが取れている状態'],
+            ['word' => '尊重', 'hint' => '相手を大切にすること'],
+            ['word' => '効率', 'hint' => '無駄なく物事を進めること'],
+            ['word' => '柔軟', 'hint' => '状況に応じて対応できること'],
+            ['word' => '継続', 'hint' => '途中でやめずに続けること'],
+            ['word' => '革新', 'hint' => '新しいやり方を取り入れること'],
+            ['word' => '公平', 'hint' => 'えこひいきせず平等に扱うこと'],
+            ['word' => '謙虚', 'hint' => '控えめで偉ぶらないこと'],
+            ['word' => '献身', 'hint' => '自分を犠牲にして尽くすこと'],
+            ['word' => '寛大', 'hint' => '心が広く許すこと'],
+            ['word' => '洞察', 'hint' => '物事の本質を見抜くこと'],
+            ['word' => '忍耐', 'hint' => '苦しみに耐えること'],
+            ['word' => '積極的', 'hint' => '自ら進んで行動すること'],
+            ['word' => '慈悲', 'hint' => '思いやりの心'],
+            ['word' => '正義', 'hint' => '正しいことを貫くこと'],
+            ['word' => '責任', 'hint' => '自分の役割を果たすこと'],
+            ['word' => '信頼', 'hint' => '相手を信じること'],
+            ['word' => '感謝', 'hint' => 'ありがたく思う気持ち'],
+            ['word' => '誇り', 'hint' => '自分を価値あると思う気持ち'],
+            ['word' => '思慮深い', 'hint' => 'よく考えて行動すること'],
+            ['word' => '勤勉', 'hint' => 'まじめに働くこと'],
+            ['word' => '友情', 'hint' => '友達との絆'],
         ];
 
-        $questions = [];
+        $selectedQuestions = $this->selectRandom($questionPool, 10);
 
-        foreach ($codingPairs as $index => $pair) {
-            $questions[] = [
-                'subtest_type'    => 'H',
+        foreach ($selectedQuestions as $index => $question) {
+            QuestionModel::create([
+                'id' => (string) Str::uuid(),
+                'subtest_type' => 'B',
                 'sequence_number' => $index + 1,
-                'content'         => "対応表：1=A, 2=B, 3=C, 4=D, 5=E, 6=F, 7=G, 8=H, 9=I\n\n数字「{$pair[0]}」に対応する文字は？",
-                'question_type'   => 'time_based',
-                'correct_answer'  => $pair[1],
-                'options'         => null,
-                'max_points'      => 1,
-                'hint'            => '対応表を参照してください',
+                'content' => "「{$question['word']}」という言葉の意味を説明してください。",
+                'question_type' => 'free_text',
+                'correct_answer' => null,
+                'options' => null,
+                'max_points' => 2,
+                'hint' => $question['hint'],
+            ]);
+        }
+    }
+
+    /**
+     * C: 規則発見（Pattern Recognition）- 24問のプールから12問ランダム選択
+     */
+    private function seedPatternRecognition(): void
+    {
+        $questionPool = [
+            ['pattern' => '2, 4, 6, 8, ?', 'options' => ['A' => '9', 'B' => '10', 'C' => '11', 'D' => '12'], 'correct' => 'B'],
+            ['pattern' => '1, 3, 5, 7, ?', 'options' => ['A' => '8', 'B' => '9', 'C' => '10', 'D' => '11'], 'correct' => 'B'],
+            ['pattern' => '10, 20, 30, 40, ?', 'options' => ['A' => '45', 'B' => '50', 'C' => '55', 'D' => '60'], 'correct' => 'B'],
+            ['pattern' => '1, 4, 9, 16, ?', 'options' => ['A' => '20', 'B' => '25', 'C' => '30', 'D' => '36'], 'correct' => 'B'],
+            ['pattern' => '5, 10, 15, 20, ?', 'options' => ['A' => '22', 'B' => '25', 'C' => '27', 'D' => '30'], 'correct' => 'B'],
+            ['pattern' => '100, 90, 80, 70, ?', 'options' => ['A' => '50', 'B' => '60', 'C' => '65', 'D' => '55'], 'correct' => 'B'],
+            ['pattern' => '3, 6, 12, 24, ?', 'options' => ['A' => '36', 'B' => '48', 'C' => '60', 'D' => '72'], 'correct' => 'B'],
+            ['pattern' => '1, 2, 4, 8, ?', 'options' => ['A' => '12', 'B' => '16', 'C' => '20', 'D' => '24'], 'correct' => 'B'],
+            ['pattern' => '50, 45, 40, 35, ?', 'options' => ['A' => '25', 'B' => '30', 'C' => '32', 'D' => '28'], 'correct' => 'B'],
+            ['pattern' => '7, 14, 21, 28, ?', 'options' => ['A' => '32', 'B' => '35', 'C' => '38', 'D' => '42'], 'correct' => 'B'],
+            ['pattern' => '2, 6, 18, 54, ?', 'options' => ['A' => '108', 'B' => '162', 'C' => '216', 'D' => '270'], 'correct' => 'B'],
+            ['pattern' => '81, 27, 9, 3, ?', 'options' => ['A' => '0', 'B' => '1', 'C' => '2', 'D' => '3'], 'correct' => 'B'],
+            ['pattern' => '11, 22, 33, 44, ?', 'options' => ['A' => '50', 'B' => '55', 'C' => '60', 'D' => '66'], 'correct' => 'B'],
+            ['pattern' => '4, 8, 16, 32, ?', 'options' => ['A' => '48', 'B' => '64', 'C' => '80', 'D' => '96'], 'correct' => 'B'],
+            ['pattern' => '15, 30, 45, 60, ?', 'options' => ['A' => '70', 'B' => '75', 'C' => '80', 'D' => '85'], 'correct' => 'B'],
+            ['pattern' => '1, 1, 2, 3, 5, 8, ?', 'options' => ['A' => '11', 'B' => '13', 'C' => '15', 'D' => '17'], 'correct' => 'B'],
+            ['pattern' => '64, 32, 16, 8, ?', 'options' => ['A' => '2', 'B' => '4', 'C' => '6', 'D' => '8'], 'correct' => 'B'],
+            ['pattern' => '6, 12, 24, 48, ?', 'options' => ['A' => '72', 'B' => '96', 'C' => '120', 'D' => '144'], 'correct' => 'B'],
+            ['pattern' => '99, 88, 77, 66, ?', 'options' => ['A' => '44', 'B' => '55', 'C' => '60', 'D' => '50'], 'correct' => 'B'],
+            ['pattern' => '13, 26, 39, 52, ?', 'options' => ['A' => '60', 'B' => '65', 'C' => '70', 'D' => '75'], 'correct' => 'B'],
+            ['pattern' => '3, 9, 27, 81, ?', 'options' => ['A' => '162', 'B' => '243', 'C' => '324', 'D' => '405'], 'correct' => 'B'],
+            ['pattern' => '125, 100, 75, 50, ?', 'options' => ['A' => '20', 'B' => '25', 'C' => '30', 'D' => '35'], 'correct' => 'B'],
+            ['pattern' => '8, 16, 32, 64, ?', 'options' => ['A' => '96', 'B' => '128', 'C' => '160', 'D' => '192'], 'correct' => 'B'],
+            ['pattern' => '17, 34, 51, 68, ?', 'options' => ['A' => '80', 'B' => '85', 'C' => '90', 'D' => '95'], 'correct' => 'B'],
+        ];
+
+        $selectedQuestions = $this->selectRandom($questionPool, 12);
+
+        foreach ($selectedQuestions as $index => $question) {
+            QuestionModel::create([
+                'id' => (string) Str::uuid(),
+                'subtest_type' => 'C',
+                'sequence_number' => $index + 1,
+                'content' => "次の数列の規則性を見つけて、?に入る数を選んでください：{$question['pattern']}",
+                'question_type' => 'multiple_choice',
+                'correct_answer' => $question['correct'],
+                'options' => $question['options'],
+                'max_points' => 1,
+                'hint' => null,
+            ]);
+        }
+    }
+
+    /**
+     * D: 簡易マトリクス（Matrix Reasoning）- 20問のプールから10問ランダム選択
+     */
+    private function seedMatrixReasoning(): void
+    {
+        $questionPool = [];
+
+        // パターン1: 図形の数が増えるパターン
+        for ($i = 1; $i <= 5; $i++) {
+            $questionPool[] = [
+                'description' => "図形が{$i}個から" . ($i + 1) . "個に増える規則",
+                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
+                'correct' => 'B',
             ];
         }
 
-        return $questions;
+        // パターン2: 図形が回転するパターン
+        for ($i = 1; $i <= 5; $i++) {
+            $questionPool[] = [
+                'description' => "図形が" . ($i * 45) . "度回転する規則",
+                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
+                'correct' => 'B',
+            ];
+        }
+
+        // パターン3: 色が変わるパターン
+        for ($i = 1; $i <= 5; $i++) {
+            $questionPool[] = [
+                'description' => "図形の色が段階的に変わる規則",
+                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
+                'correct' => 'B',
+            ];
+        }
+
+        // パターン4: サイズが変わるパターン
+        for ($i = 1; $i <= 5; $i++) {
+            $questionPool[] = [
+                'description' => "図形のサイズが変化する規則",
+                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
+                'correct' => 'B',
+            ];
+        }
+
+        $selectedQuestions = $this->selectRandom($questionPool, 10);
+
+        foreach ($selectedQuestions as $index => $question) {
+            QuestionModel::create([
+                'id' => (string) Str::uuid(),
+                'subtest_type' => 'D',
+                'sequence_number' => $index + 1,
+                'content' => "マトリクスの規則を見つけて、空欄に入る図形を選んでください。{$question['description']}",
+                'question_type' => 'multiple_choice',
+                'correct_answer' => $question['correct'],
+                'options' => $question['options'],
+                'max_points' => 1,
+                'hint' => null,
+            ]);
+        }
+    }
+
+    /**
+     * E: 数唱（Digit Span）- 27系列のプールから18系列ランダム選択
+     */
+    private function seedDigitSpan(): void
+    {
+        $sequencePool = [
+            // 3桁
+            '258', '714', '639', '482', '157', '926', '341', '785', '692',
+            // 4桁
+            '5827', '9146', '3682', '7459', '1834', '6291', '4753', '8126', '2947',
+            // 5桁
+            '39825', '74162', '58394', '91647', '26183', '47925', '83516', '65829', '12749',
+            // 6桁
+            '582749', '914637', '368259', '745182', '183649', '629174', '475386', '812693', '294751',
+        ];
+
+        $selectedSequences = $this->selectRandom($sequencePool, 18);
+
+        foreach ($selectedSequences as $index => $sequence) {
+            QuestionModel::create([
+                'id' => (string) Str::uuid(),
+                'subtest_type' => 'E',
+                'sequence_number' => $index + 1,
+                'content' => "次の数字を覚えて、そのまま入力してください：{$sequence}",
+                'question_type' => 'sequence',
+                'correct_answer' => $sequence,
+                'options' => null,
+                'max_points' => 1,
+                'hint' => '数字を一つずつ確認してください',
+            ]);
+        }
+    }
+
+    /**
+     * F: 暗算（Arithmetic）- 20問のプールから10問ランダム選択
+     */
+    private function seedArithmetic(): void
+    {
+        $questionPool = [
+            ['problem' => '15 + 27 = ?', 'options' => ['A' => '40', 'B' => '42', 'C' => '44', 'D' => '46'], 'correct' => 'B'],
+            ['problem' => '48 - 19 = ?', 'options' => ['A' => '27', 'B' => '29', 'C' => '31', 'D' => '33'], 'correct' => 'B'],
+            ['problem' => '12 × 6 = ?', 'options' => ['A' => '68', 'B' => '72', 'C' => '76', 'D' => '80'], 'correct' => 'B'],
+            ['problem' => '144 ÷ 12 = ?', 'options' => ['A' => '10', 'B' => '12', 'C' => '14', 'D' => '16'], 'correct' => 'B'],
+            ['problem' => '25 + 38 = ?', 'options' => ['A' => '61', 'B' => '63', 'C' => '65', 'D' => '67'], 'correct' => 'B'],
+            ['problem' => '82 - 45 = ?', 'options' => ['A' => '35', 'B' => '37', 'C' => '39', 'D' => '41'], 'correct' => 'B'],
+            ['problem' => '15 × 4 = ?', 'options' => ['A' => '56', 'B' => '60', 'C' => '64', 'D' => '68'], 'correct' => 'B'],
+            ['problem' => '96 ÷ 8 = ?', 'options' => ['A' => '10', 'B' => '12', 'C' => '14', 'D' => '16'], 'correct' => 'B'],
+            ['problem' => '34 + 29 = ?', 'options' => ['A' => '61', 'B' => '63', 'C' => '65', 'D' => '67'], 'correct' => 'B'],
+            ['problem' => '75 - 38 = ?', 'options' => ['A' => '35', 'B' => '37', 'C' => '39', 'D' => '41'], 'correct' => 'B'],
+            ['problem' => '18 × 5 = ?', 'options' => ['A' => '85', 'B' => '90', 'C' => '95', 'D' => '100'], 'correct' => 'B'],
+            ['problem' => '108 ÷ 9 = ?', 'options' => ['A' => '10', 'B' => '12', 'C' => '14', 'D' => '16'], 'correct' => 'B'],
+            ['problem' => '46 + 57 = ?', 'options' => ['A' => '101', 'B' => '103', 'C' => '105', 'D' => '107'], 'correct' => 'B'],
+            ['problem' => '91 - 48 = ?', 'options' => ['A' => '41', 'B' => '43', 'C' => '45', 'D' => '47'], 'correct' => 'B'],
+            ['problem' => '22 × 3 = ?', 'options' => ['A' => '62', 'B' => '66', 'C' => '70', 'D' => '74'], 'correct' => 'B'],
+            ['problem' => '135 ÷ 15 = ?', 'options' => ['A' => '7', 'B' => '9', 'C' => '11', 'D' => '13'], 'correct' => 'B'],
+            ['problem' => '53 + 68 = ?', 'options' => ['A' => '119', 'B' => '121', 'C' => '123', 'D' => '125'], 'correct' => 'B'],
+            ['problem' => '84 - 29 = ?', 'options' => ['A' => '53', 'B' => '55', 'C' => '57', 'D' => '59'], 'correct' => 'B'],
+            ['problem' => '16 × 7 = ?', 'options' => ['A' => '108', 'B' => '112', 'C' => '116', 'D' => '120'], 'correct' => 'B'],
+            ['problem' => '120 ÷ 10 = ?', 'options' => ['A' => '10', 'B' => '12', 'C' => '14', 'D' => '16'], 'correct' => 'B'],
+        ];
+
+        $selectedQuestions = $this->selectRandom($questionPool, 10);
+
+        foreach ($selectedQuestions as $index => $question) {
+            QuestionModel::create([
+                'id' => (string) Str::uuid(),
+                'subtest_type' => 'F',
+                'sequence_number' => $index + 1,
+                'content' => "暗算で計算してください：{$question['problem']}",
+                'question_type' => 'multiple_choice',
+                'correct_answer' => $question['correct'],
+                'options' => $question['options'],
+                'max_points' => 1,
+                'hint' => null,
+            ]);
+        }
+    }
+
+    /**
+     * G: 探索（Symbol Search）- 36問のプールから24問ランダム選択
+     */
+    private function seedSymbolSearch(): void
+    {
+        $symbols = ['○', '△', '□', '◇', '☆', '◎', '▽', '■', '◆', '★'];
+        $questionPool = [];
+
+        for ($i = 0; $i < 36; $i++) {
+            $targetSymbol = $symbols[$i % count($symbols)];
+            $questionPool[] = [
+                'target' => $targetSymbol,
+                'description' => "記号 {$targetSymbol} が右側のグループに含まれているか答えてください",
+            ];
+        }
+
+        $selectedQuestions = $this->selectRandom($questionPool, 24);
+
+        foreach ($selectedQuestions as $index => $question) {
+            QuestionModel::create([
+                'id' => (string) Str::uuid(),
+                'subtest_type' => 'G',
+                'sequence_number' => $index + 1,
+                'content' => $question['description'],
+                'question_type' => 'time_based',
+                'correct_answer' => '○',
+                'options' => ['○' => 'はい', '×' => 'いいえ'],
+                'max_points' => 1,
+                'hint' => null,
+            ]);
+        }
+    }
+
+    /**
+     * H: 符号化（Coding）- 90問のプールから60問ランダム選択
+     */
+    private function seedCoding(): void
+    {
+        $codeMapping = [
+            '1' => 'A', '2' => 'B', '3' => 'C', '4' => 'D', '5' => 'E',
+            '6' => 'F', '7' => 'G', '8' => 'H', '9' => 'I', '0' => 'J',
+        ];
+
+        $questionPool = [];
+        for ($i = 0; $i < 90; $i++) {
+            $digit = (string) ($i % 10);
+            $questionPool[] = [
+                'digit' => $digit,
+                'code' => $codeMapping[$digit],
+            ];
+        }
+
+        $selectedQuestions = $this->selectRandom($questionPool, 60);
+
+        foreach ($selectedQuestions as $index => $question) {
+            QuestionModel::create([
+                'id' => (string) Str::uuid(),
+                'subtest_type' => 'H',
+                'sequence_number' => $index + 1,
+                'content' => "数字 {$question['digit']} に対応する記号を選んでください",
+                'question_type' => 'time_based',
+                'correct_answer' => $question['code'],
+                'options' => $codeMapping,
+                'max_points' => 1,
+                'hint' => '表を参照してください',
+            ]);
+        }
+    }
+
+    /**
+     * 配列からランダムに指定数の要素を選択
+     */
+    private function selectRandom(array $array, int $count): array
+    {
+        $keys = array_rand($array, min($count, count($array)));
+        if (!is_array($keys)) {
+            $keys = [$keys];
+        }
+
+        return array_map(fn($key) => $array[$key], $keys);
     }
 }
+
