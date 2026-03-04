@@ -141,7 +141,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAssessmentStore, SUBTEST_ORDER, SUBTEST_META } from '../stores/assessment.js';
 import FreeTextQuestion from '../components/FreeTextQuestion.vue';
@@ -212,4 +212,14 @@ function goNext() {
 }
 
 onMounted(load);
+
+// propsの変更を監視して、サブテストが切り替わったら再読み込み
+watch(() => props.subtestType, () => {
+    // 状態をリセット
+    phase.value = 'loading';
+    collectedAnswers.value = [];
+    currentIndex.value = 0;
+    // 新しいサブテストを読み込む
+    load();
+});
 </script>
