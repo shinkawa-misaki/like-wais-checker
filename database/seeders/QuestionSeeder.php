@@ -6,13 +6,16 @@ namespace Database\Seeders;
 
 use App\Infrastructure\Persistence\Eloquent\Models\QuestionModel;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class QuestionSeeder extends Seeder
 {
     public function run(): void
     {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
         QuestionModel::truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
         foreach ($this->getQuestions() as $question) {
             QuestionModel::create(array_merge(['id' => (string) Str::uuid()], $question));
