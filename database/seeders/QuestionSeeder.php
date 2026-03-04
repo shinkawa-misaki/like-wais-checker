@@ -15,6 +15,9 @@ final class QuestionSeeder extends Seeder
      */
     public function run(): void
     {
+        // 既存のデータをすべて削除
+        QuestionModel::query()->delete();
+
         $this->seedSimilarities();
         $this->seedVocabulary();
         $this->seedPatternRecognition();

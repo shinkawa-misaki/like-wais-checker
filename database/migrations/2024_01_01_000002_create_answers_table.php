@@ -15,7 +15,7 @@ return new class () extends Migration {
             $table->uuid('question_id');
             $table->text('response');
             $table->decimal('awarded_score', 5, 2)->default(0);
-            $table->timestamp('created_at');
+            $table->timestamps();
 
             $table->foreign('assessment_id')->references('id')->on('assessments')->cascadeOnDelete();
             $table->foreign('question_id')->references('id')->on('questions');
