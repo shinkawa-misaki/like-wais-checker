@@ -25,7 +25,7 @@
           </li>
           <li class="flex gap-2">
             <span class="text-amber-500 shrink-0">•</span>
-            <span><strong>検索・辞書・電卓は禁止</strong>（タイマーだけOK）。</span>
+            <span><strong>検索・辞書・電卓は禁止</strong>。</span>
           </li>
         </ul>
       </div>
@@ -87,7 +87,6 @@ const loading = ref(false);
 
 const checklist = ref([
     { id: 'quiet', label: '静かな場所にいる', checked: false },
-    { id: 'timer', label: 'タイマー（スマホ等）を手元に用意した', checked: false },
     { id: 'nodic', label: '検索・辞書・電卓を使わないことに同意する', checked: false },
     { id: 'health', label: '体調は問題ない（睡眠・疲労など）', checked: false },
     { id: 'time', label: '30〜40分の時間を確保した', checked: false },
