@@ -280,48 +280,76 @@ final class QuestionSeeder extends Seeder
         $questionPool = [];
 
         // パターン1: 図形の数が増えるパターン (10問)
+        $shapes = ['○', '△', '□', '◇', '☆'];
         for ($i = 1; $i <= 10; $i++) {
+            $shape = $shapes[($i - 1) % count($shapes)];
             $questionPool[] = [
-                'description' => "図形が{$i}個から段階的に増える規則 (バリエーション{$i})",
-                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
-                'correct' => 'B',
+                'description' => "{$shape}の数が1→2→3と増える規則",
+                'options' => [
+                    'A' => "{$shape} 1個",
+                    'B' => "{$shape} 2個",
+                    'C' => "{$shape} 3個",
+                    'D' => "{$shape} 4個"
+                ],
+                'correct' => 'D',
             ];
         }
 
         // パターン2: 図形が回転するパターン (10問)
+        $rotateShapes = ['→', '↓', '←', '↑'];
         for ($i = 1; $i <= 10; $i++) {
             $angle = ($i * 30) % 360;
             $questionPool[] = [
-                'description' => "図形が{$angle}度回転する規則 (バリエーション{$i})",
-                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
-                'correct' => 'B',
+                'description' => "矢印が時計回りに{$angle}度ずつ回転する規則",
+                'options' => [
+                    'A' => '→ (0度)',
+                    'B' => '↘ (45度)',
+                    'C' => '↓ (90度)',
+                    'D' => '↙ (135度)'
+                ],
+                'correct' => 'C',
             ];
         }
 
         // パターン3: 色や濃淡が変わるパターン (10問)
         for ($i = 1; $i <= 10; $i++) {
             $questionPool[] = [
-                'description' => "図形の色や濃淡が段階的に変わる規則 (バリエーション{$i})",
-                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
-                'correct' => 'B',
+                'description' => "図形の色が「白→灰→黒」と濃くなる規則",
+                'options' => [
+                    'A' => '◯ (白)',
+                    'B' => '◐ (灰)',
+                    'C' => '● (黒)',
+                    'D' => '◯ (白)'
+                ],
+                'correct' => 'C',
             ];
         }
 
         // パターン4: サイズが変わるパターン (10問)
         for ($i = 1; $i <= 10; $i++) {
             $questionPool[] = [
-                'description' => "図形のサイズが段階的に変化する規則 (バリエーション{$i})",
-                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
-                'correct' => 'B',
+                'description' => "図形が「小→中→大」と大きくなる規則",
+                'options' => [
+                    'A' => '小さい○',
+                    'B' => '中くらいの○',
+                    'C' => '大きい○',
+                    'D' => '小さい○'
+                ],
+                'correct' => 'C',
             ];
         }
 
         // パターン5: 位置が変わるパターン (10問)
         for ($i = 1; $i <= 10; $i++) {
             $questionPool[] = [
-                'description' => "図形の位置が移動する規則 (バリエーション{$i})",
-                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
-                'correct' => 'B',
+                'description' => "図形が「左→中央→右」と移動する規則",
+                'options' => [
+                    'A' => '左側に●',
+                    'B' => '中央に●',
+                    'C' => '右側に●',
+                    'D' => '左側に●'
+                ],
+                'correct' => 'C',
             ];
         }
 
@@ -331,7 +359,7 @@ final class QuestionSeeder extends Seeder
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'D',
                 'sequence_number' => $index + 1,
-                'content' => "マトリクスの規則を見つけて、空欄に入る図形を選んでください。{$question['description']}",
+                'content' => "3×3のマトリクス（表）があり、規則に従って図形が配置されています。空欄に入る図形を選んでください。\n\n【規則】{$question['description']}",
                 'question_type' => 'multiple_choice',
                 'correct_answer' => $question['correct'],
                 'options' => $question['options'],
