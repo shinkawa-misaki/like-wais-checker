@@ -1,26 +1,26 @@
 <?php
 
-declare(strict_types=1);
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
-        Schema::create('questions', function (Blueprint $table): void {
+        Schema::create('questions', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('subtest_type', 2);  // A-H
+            $table->string('subtest_type', 1)->index();
             $table->integer('sequence_number');
             $table->text('content');
-            $table->string('question_type', 30);
-            $table->string('correct_answer');
+            $table->string('question_type');
+            $table->string('correct_answer')->nullable();
             $table->json('options')->nullable();
             $table->integer('max_points')->default(1);
             $table->text('hint')->nullable();
+            $table->timestamps();
 
-            $table->index(['subtest_type', 'sequence_number']);
+            $table->unique(['subtest_type', 'sequence_number']);
         });
     }
 
@@ -29,3 +29,4 @@ return new class () extends Migration {
         Schema::dropIfExists('questions');
     }
 };
+

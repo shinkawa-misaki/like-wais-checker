@@ -30,7 +30,13 @@ final class ScoringDomainService
 
     private function gradeExact(Question $question, Answer $answer): Score
     {
-        $isCorrect = strtolower(trim($answer->getResponse())) === strtolower(trim($question->getCorrectAnswer()));
+        // 未回答（空の回答）は0点
+        $response = trim($answer->getResponse());
+        if ($response === '') {
+            return Score::zero();
+        }
+
+        $isCorrect = strtolower($response) === strtolower(trim($question->getCorrectAnswer()));
 
         return $isCorrect ? new Score(1.0) : Score::zero();
     }
@@ -58,7 +64,13 @@ final class ScoringDomainService
                 continue;
             }
 
-            $isCorrect = strtolower(trim($answer->getResponse())) === strtolower(trim($question->getCorrectAnswer()));
+            // 未回答（空の回答）はスキップ
+            $response = trim($answer->getResponse());
+            if ($response === '') {
+                continue;
+            }
+
+            $isCorrect = strtolower($response) === strtolower(trim($question->getCorrectAnswer()));
 
             if ($isCorrect) {
                 $correct++;
@@ -114,6 +126,67 @@ final class ScoringDomainService
         }
 
         return $total;
+    }
+
+    /**
+     * Calculate pseudo IQ score from percentage.
+     * Uses standard IQ distribution: mean=100, SD=15
+     * Maps 0-100% to approximately 55-145 IQ range
+     */
+    public function calculatePseudoIQ(float $percentage): int
+    {
+        // パーセンテージを0-1の範囲に正規化
+        $normalized = $percentage / 100.0;
+
+        // 正規分布の逆関数を使用してz-scoreを計算
+        // 簡易的な変換: percentage 50% = IQ 100, 各標準偏差ごとに約16.67%
+        // 0% ≈ IQ 55, 50% = IQ 100, 100% ≈ IQ 145
+
+        if ($normalized <= 0.0) {
+            return 55;
+        }
+        if ($normalized >= 1.0) {
+            return 145;
+        }
+
+        // 線形変換ではなく、より現実的な分布を使用
+        // 50%を基準に、上下それぞれ3標準偏差の範囲をカバー
+        $zScore = $this->percentileToZScore($normalized);
+        $iq = 100 + ($zScore * 15);
+
+        // IQの範囲を制限
+        return (int) round(max(55, min(145, $iq)));
+    }
+
+    /**
+     * Convert percentile (0-1) to z-score using approximation
+     */
+    private function percentileToZScore(float $percentile): float
+    {
+        // 0-1の範囲を-3から+3のz-scoreに変換
+        // 簡易的な線形近似（より正確には逆正規分布関数を使用すべきだが、簡略化のため）
+
+        // パーセンタイルを標準正規分布のz-scoreに変換
+        // 16% ≈ -1SD, 50% = 0SD, 84% ≈ +1SD
+        if ($percentile <= 0.02) return -3.0;
+        if ($percentile <= 0.16) return -1.0 + ($percentile - 0.02) / 0.14 * (-2.0);
+        if ($percentile <= 0.50) return -1.0 + ($percentile - 0.16) / 0.34;
+        if ($percentile <= 0.84) return 0.0 + ($percentile - 0.50) / 0.34;
+        if ($percentile <= 0.98) return 1.0 + ($percentile - 0.84) / 0.14 * 2.0;
+        return 3.0;
+    }
+
+    public function interpretIQ(int $iq): string
+    {
+        return match (true) {
+            $iq >= 130  => '非常に高い（Very Superior）',
+            $iq >= 120  => '高い（Superior）',
+            $iq >= 110  => '平均の上（High Average）',
+            $iq >= 90   => '平均（Average）',
+            $iq >= 80   => '平均の下（Low Average）',
+            $iq >= 70   => '境界域（Borderline）',
+            default     => '低い（Extremely Low）',
+        };
     }
 
     public function percentageLevel(float $percentage): string

@@ -13,6 +13,8 @@ final class IndexScoreDto
         public readonly int $maxScore,
         public readonly float $percentage,
         public readonly string $level,
+        public readonly int $pseudoIQ,
+        public readonly string $iqInterpretation,
         public readonly string $interpretation,
     ) {
     }

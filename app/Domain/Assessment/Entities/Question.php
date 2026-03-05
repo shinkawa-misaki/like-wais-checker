@@ -19,7 +19,7 @@ final class Question
         private readonly int $sequenceNumber,
         private readonly string $content,
         private readonly QuestionType $questionType,
-        private readonly string $correctAnswer,
+        private readonly ?string $correctAnswer,
         private readonly ?array $options = null,
         private readonly int $maxPoints = 1,
         private readonly ?string $hint = null,
@@ -51,7 +51,7 @@ final class Question
         return $this->questionType;
     }
 
-    public function getCorrectAnswer(): string
+    public function getCorrectAnswer(): ?string
     {
         return $this->correctAnswer;
     }

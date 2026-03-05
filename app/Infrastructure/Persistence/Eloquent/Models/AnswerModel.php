@@ -23,12 +23,11 @@ class AnswerModel extends Model
 
     public $incrementing = false;
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     /** @var array<string, string> */
     protected $casts = [
         'awarded_score' => 'float',
-        'created_at'    => 'datetime',
     ];
 
     /** @var list<string> */
@@ -38,7 +37,6 @@ class AnswerModel extends Model
         'question_id',
         'response',
         'awarded_score',
-        'created_at',
     ];
 
     /** @return BelongsTo<AssessmentModel, $this> */

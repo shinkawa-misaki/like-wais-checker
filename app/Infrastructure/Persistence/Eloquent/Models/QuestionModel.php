@@ -6,34 +6,13 @@ namespace App\Infrastructure\Persistence\Eloquent\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * @property string $id
- * @property string $subtest_type
- * @property int $sequence_number
- * @property string $content
- * @property string $question_type
- * @property string $correct_answer
- * @property array<string>|null $options
- * @property int $max_points
- * @property string|null $hint
- */
-class QuestionModel extends Model
+final class QuestionModel extends Model
 {
     protected $table = 'questions';
 
+    public $incrementing = false;
     protected $keyType = 'string';
 
-    public $incrementing = false;
-
-    public $timestamps = false;
-
-    /** @var array<string, string> */
-    protected $casts = [
-        'options'    => 'array',
-        'max_points' => 'integer',
-    ];
-
-    /** @var list<string> */
     protected $fillable = [
         'id',
         'subtest_type',
@@ -45,4 +24,11 @@ class QuestionModel extends Model
         'max_points',
         'hint',
     ];
+
+    protected $casts = [
+        'options' => 'array',
+        'max_points' => 'integer',
+        'sequence_number' => 'integer',
+    ];
 }
+

@@ -13,7 +13,7 @@ return new class () extends Migration {
             $table->uuid('id')->primary();
             $table->string('status', 20)->default('in_progress');
             $table->json('completed_subtests');
-            $table->timestamp('created_at');
+            $table->timestamps();
             $table->timestamp('completed_at')->nullable();
         });
     }

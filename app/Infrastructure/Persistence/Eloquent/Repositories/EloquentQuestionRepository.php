@@ -16,19 +16,30 @@ final class EloquentQuestionRepository implements QuestionRepositoryInterface
     /** @return array<Question> */
     public function findBySubtestType(SubtestType $subtestType): array
     {
-        $models = QuestionModel::where('subtest_type', $subtestType->value)
-            ->orderBy('sequence_number')
-            ->get();
+        // 各サブテストで必要な問題数を取得
+        $requiredCount = $subtestType->questionCount();
 
-        return $models->map(fn (QuestionModel $m) => $this->toDomainEntity($m))->all();
+        // データベースから該当するサブテストタイプの全問題を取得
+        $models = QuestionModel::where('subtest_type', $subtestType->value)
+            ->get()
+            ->shuffle() // Collectionのshuffleメソッドでランダム化
+            ->take($requiredCount); // 必要数だけ取得
+
+        // sequence_numberを再割り当て
+        $questions = [];
+        foreach ($models as $index => $model) {
+            $questions[] = $this->toDomainEntity($model, $index + 1);
+        }
+
+        return $questions;
     }
 
-    private function toDomainEntity(QuestionModel $model): Question
+    private function toDomainEntity(QuestionModel $model, int $sequenceNumber): Question
     {
         return new Question(
             id: new QuestionId($model->id),
             subtestType: SubtestType::from($model->subtest_type),
-            sequenceNumber: $model->sequence_number,
+            sequenceNumber: $sequenceNumber,
             content: $model->content,
             questionType: QuestionType::from($model->question_type),
             correctAnswer: $model->correct_answer,
