@@ -74,8 +74,10 @@ export const useAssessmentStore = defineStore('assessment', {
             this.error = null;
             try {
                 const response = await assessmentApi.getQuestions(this.assessmentId, subtestType);
+                console.log('Fetched questions:', response.data.data);
                 return response.data.data;
             } catch (e) {
+                console.error('Fetch questions error:', e);
                 this.error = '問題の取得に失敗しました。';
                 throw e;
             } finally {
@@ -87,6 +89,7 @@ export const useAssessmentStore = defineStore('assessment', {
             this.loading = true;
             this.error = null;
             try {
+                console.log('Submitting answers:', { assessmentId: this.assessmentId, subtestType, answers, elapsedSeconds });
                 const response = await assessmentApi.submitAnswers(
                     this.assessmentId,
                     subtestType,
@@ -98,7 +101,17 @@ export const useAssessmentStore = defineStore('assessment', {
                 sessionStorage.setItem('completedSubtests', JSON.stringify(data.completedSubtests));
                 return data;
             } catch (e) {
-                this.error = '回答の送信に失敗しました。';
+                console.error('Submit answers error:', e);
+                console.error('Error response:', e.response?.data);
+
+                // より詳細なエラーメッセージを表示
+                if (e.response?.data?.error) {
+                    this.error = `回答の送信に失敗しました: ${e.response.data.error}`;
+                } else if (e.response?.data?.message) {
+                    this.error = `回答の送信に失敗しました: ${e.response.data.message}`;
+                } else {
+                    this.error = '回答の送信に失敗しました。';
+                }
                 throw e;
             } finally {
                 this.loading = false;

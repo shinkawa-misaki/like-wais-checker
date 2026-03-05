@@ -89,16 +89,19 @@
           <!-- 現在の問題 -->
           <FreeTextQuestion
             v-if="currentQuestion?.questionType === 'free_text'"
+            :key="`question-${currentIndex}`"
             :question="currentQuestion"
             @answered="onAnswered"
           />
           <MultipleChoiceQuestion
             v-else-if="currentQuestion?.questionType === 'multiple_choice'"
+            :key="`question-${currentIndex}`"
             :question="currentQuestion"
             @answered="onAnswered"
           />
           <SequenceQuestion
             v-else-if="currentQuestion?.questionType === 'sequence'"
+            :key="`question-${currentIndex}`"
             :question="currentQuestion"
             @answered="onAnswered"
           />
@@ -173,6 +176,10 @@ const subtestProgress = computed(() =>
 
 async function load() {
     phase.value = 'loading';
+    // 古い回答データをクリア
+    collectedAnswers.value = [];
+    currentIndex.value = 0;
+
     const data = await store.fetchQuestions(props.subtestType);
     meta.value = data;
     questions.value = data.questions;

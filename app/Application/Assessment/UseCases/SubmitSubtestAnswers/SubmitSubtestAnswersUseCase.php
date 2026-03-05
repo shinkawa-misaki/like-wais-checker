@@ -45,40 +45,62 @@ final class SubmitSubtestAnswersUseCase
 
         $questions = $this->questionRepository->findBySubtestType($subtestType);
         $questionMap = [];
+        $sequenceMap = [];
 
         foreach ($questions as $question) {
             $questionMap[$question->getId()->getValue()] = $question;
+            $sequenceMap[$question->getSequenceNumber()] = $question;
         }
 
-        foreach ($input->answers as $answerInput) {
+        $validAnswers = 0;
+        $answersWithSequence = [];
+
+        // まず、送信された回答に対応する問題のシーケンス番号を特定
+        foreach ($input->answers as $index => $answerInput) {
+            $answersWithSequence[] = [
+                'input' => $answerInput,
+                'sequence' => $index + 1, // 0-based index to 1-based sequence
+            ];
+        }
+
+        foreach ($answersWithSequence as $answerData) {
+            $answerInput = $answerData['input'];
+            $expectedSequence = $answerData['sequence'];
+
+            // まず、送信された問題IDで検索
             $question = $questionMap[$answerInput->questionId] ?? null;
 
+            // 問題IDが見つからない場合は、シーケンス番号で照合
             if ($question === null) {
-                throw new DomainException("Question not found: {$answerInput->questionId}");
+                $question = $sequenceMap[$expectedSequence] ?? null;
+
+                if ($question === null) {
+                    // シーケンス番号でも見つからない場合はスキップ
+                    continue;
+                }
             }
 
-            // For FREE_TEXT questions, use the provided awardedScore (human grading)
-            $awardedScore = match ($question->getQuestionType()) {
-                \App\Domain\Assessment\ValueObjects\QuestionType::FREE_TEXT => new Score(
-                    max(0.0, min((float) ($answerInput->awardedScore ?? 0), (float) $question->getMaxPoints()))
-                ),
-                default => Score::zero(), // Will be auto-graded by domain service
-            };
-
+            // Create answer with the correct question ID
             $answer = new Answer(
-                questionId: new QuestionId($answerInput->questionId),
+                questionId: $question->getId(), // 正しい問題IDを使用
                 assessmentId: $assessmentId,
                 response: $answerInput->response,
-                awardedScore: $awardedScore,
+                awardedScore: Score::zero(),
             );
 
-            // Auto-grade non-free-text answers
-            if ($question->getQuestionType() !== \App\Domain\Assessment\ValueObjects\QuestionType::FREE_TEXT) {
-                $gradedScore = $this->scoringService->gradeAnswer($question, $answer);
-                $answer->updateScore($gradedScore);
-            }
+            // Auto-grade all answers using the scoring service
+            $gradedScore = $this->scoringService->gradeAnswer($question, $answer);
+            $answer->updateScore($gradedScore);
 
             $assessment->addAnswer($answer);
+            $validAnswers++;
+        }
+
+        // 有効な回答が1つもない場合はエラー
+        if ($validAnswers === 0 && count($input->answers) > 0) {
+            throw new DomainException(
+                "No valid answers found. Please refresh the page and restart the subtest."
+            );
         }
 
         $assessment->markSubtestCompleted($subtestType);
