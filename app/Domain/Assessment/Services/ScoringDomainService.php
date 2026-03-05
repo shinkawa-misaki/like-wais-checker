@@ -12,6 +12,10 @@ use App\Domain\Assessment\ValueObjects\SubtestType;
 
 final class ScoringDomainService
 {
+    public function __construct(
+        private readonly ?NaturalLanguageScoringInterface $nlScoring = null,
+    ) {}
+
     /**
      * Grade a single answer against its question.
      * For FREE_TEXT questions, auto-grading is applied based on content analysis.
@@ -89,61 +93,23 @@ final class ScoringDomainService
     /**
      * 類似問題の採点
      *
-     * 採点方針（寛容寄り）:
-     * - correct_answer のキーワードが1つでも含まれていれば 2点
-     * - 汎用カテゴリーワードが含まれていれば 2点
-     * - 6文字以上の回答があれば 1点（何か考えた痕跡）
-     * - それ以外は 0点
+     * 自然言語マッチングを使用:
+     * - 2点: 文章・説明レベルで共通点を正確に捉えている
+     * - 1点: 単語レベルで共通点の概念を捉えている
+     * - 0点: 見当違いまたは無回答
      */
     private function gradeSimilarityAnswer(Question $question, string $response): Score
     {
-        // correct_answer からキーワードを抽出（「・」「、」「／」「/」区切り）
-        $correctKeywords = $this->extractKeywords($question->getCorrectAnswer());
-
-        foreach ($correctKeywords as $kw) {
-            if (str_contains($response, $kw)) {
-                return new Score(2.0);
-            }
+        if ($this->nlScoring === null) {
+            return Score::zero();
         }
 
-        // 汎用カテゴリーワードリスト（幅広くカバー）
-        $categoryKeywords = [
-            // 生き物・自然
-            '生物', '哺乳類', '動物', '生き物', 'ペット', '植物', '生命', '生態',
-            // 自然・地形
-            '自然', '地形', '地球', '環境', '風景', '景色', '気候', '地理',
-            // 道具・手段
-            '道具', '乗り物', '交通', '手段', 'ツール', '機器', '器具', '装置', '媒体',
-            // 感情・心理
-            '感情', '気持ち', '心', '情動', '感覚', '精神', 'メンタル',
-            // 表現・芸術・文化
-            '芸術', '表現', '文化', '文学', '文芸', 'アート', '創作', '作品',
-            // 社会・制度
-            '社会', '制度', '組織', '団体', '機関', '政治', '体制', '規範', 'ルール',
-            // 知識・概念
-            '概念', '思考', '考え', '知識', '学問', '理論', '原理',
-            // 時間・季節
-            '季節', '時間', '時期', '期間', '周期',
-            // 職業・役割
-            '職業', '仕事', '役割', '専門', '職種',
-            // コミュニケーション・情報
-            '情報', 'メディア', '通信', 'コミュニケーション', '言語',
-            // その他
-            'カテゴリ', 'グループ', '種類', '分類', '共通', '同じ', '類似',
-        ];
+        $score = $this->nlScoring->scoreSimilarityAnswer(
+            $question->getContent(),
+            $response,
+        );
 
-        foreach ($categoryKeywords as $kw) {
-            if (str_contains($response, $kw)) {
-                return new Score(2.0);
-            }
-        }
-
-        // 6文字以上あれば方向性OKとして1点
-        if (mb_strlen($response) >= 6) {
-            return new Score(1.0);
-        }
-
-        return Score::zero();
+        return new Score((float) $score);
     }
 
     /**
@@ -213,31 +179,6 @@ final class ScoringDomainService
         for ($i = 0; $i <= $haystackLen - $minLen; $i++) {
             $sub = mb_substr($haystack, $i, $minLen);
             if (str_contains($needle, $sub)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * 説明的な構造を持っているかチェック
-     */
-    private function hasExplanationStructure(string $response): bool
-    {
-        // 「〜こと」「〜である」「〜する」などの説明的表現
-        $patterns = [
-            '/こと$/',
-            '/である$/',
-            '/です$/',
-            '/する(心|気持ち|様子|状態)/',
-            '/という/',
-            '/ような/',
-            '/という意味/',
-        ];
-
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $response)) {
                 return true;
             }
         }

@@ -10,7 +10,9 @@ use App\Application\Assessment\UseCases\StartAssessment\StartAssessmentUseCase;
 use App\Application\Assessment\UseCases\SubmitSubtestAnswers\SubmitSubtestAnswersUseCase;
 use App\Domain\Assessment\Repositories\AssessmentRepositoryInterface;
 use App\Domain\Assessment\Repositories\QuestionRepositoryInterface;
+use App\Domain\Assessment\Services\NaturalLanguageScoringInterface;
 use App\Domain\Assessment\Services\ScoringDomainService;
+use App\Infrastructure\ExternalServices\ClaudeNaturalLanguageScoringService;
 use App\Infrastructure\Persistence\Eloquent\Repositories\EloquentAssessmentRepository;
 use App\Infrastructure\Persistence\Eloquent\Repositories\EloquentQuestionRepository;
 use Illuminate\Support\ServiceProvider;
@@ -30,8 +32,17 @@ final class WaisAssessmentServiceProvider extends ServiceProvider
             EloquentQuestionRepository::class,
         );
 
+        // External Services
+        $this->app->bind(NaturalLanguageScoringInterface::class, function () {
+            return new ClaudeNaturalLanguageScoringService(
+                apiKey: (string) config('services.anthropic.api_key', ''),
+            );
+        });
+
         // Domain Services
-        $this->app->singleton(ScoringDomainService::class);
+        $this->app->singleton(ScoringDomainService::class, fn ($app) => new ScoringDomainService(
+            nlScoring: $app->make(NaturalLanguageScoringInterface::class),
+        ));
 
         // Use Cases
         $this->app->bind(StartAssessmentUseCase::class, fn ($app) => new StartAssessmentUseCase(
