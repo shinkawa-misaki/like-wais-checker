@@ -12,9 +12,6 @@ use App\Domain\Assessment\ValueObjects\SubtestType;
 
 final class ScoringDomainService
 {
-    public function __construct(
-        private readonly ?NaturalLanguageScoringInterface $nlScoring = null,
-    ) {}
 
     /**
      * Grade a single answer against its question.
@@ -93,23 +90,75 @@ final class ScoringDomainService
     /**
      * 類似問題の採点
      *
-     * 自然言語マッチングを使用:
-     * - 2点: 文章・説明レベルで共通点を正確に捉えている
-     * - 1点: 単語レベルで共通点の概念を捉えている
-     * - 0点: 見当違いまたは無回答
+     * hint / correct_answer のキーワードとの部分一致で概念マッチを判定し、
+     * 日本語の文法構造（助詞・文末表現）で単語レベル vs 文章レベルを判定する。
+     *
+     * - 2点: キーワードにマッチ かつ 助詞・文末表現を含む（文章レベル）
+     * - 1点: キーワードにマッチ かつ 単語・短いフレーズ（単語レベル）
+     * - 0点: キーワードにマッチしない
      */
     private function gradeSimilarityAnswer(Question $question, string $response): Score
     {
-        if ($this->nlScoring === null) {
+        if (!$this->matchesHintConcept($question, $response)) {
             return Score::zero();
         }
 
-        $score = $this->nlScoring->scoreSimilarityAnswer(
-            $question->getContent(),
-            $response,
-        );
+        return $this->isSentenceLevel($response)
+            ? new Score(2.0)
+            : new Score(1.0);
+    }
 
-        return new Score((float) $score);
+    /**
+     * hint / correct_answer から抽出したキーワードと部分一致するか判定
+     * 双方向チェック: response→kw / kw→response
+     */
+    private function matchesHintConcept(Question $question, string $response): bool
+    {
+        foreach ($this->extractConceptKeywords($question) as $kw) {
+            if (str_contains($response, $kw) || str_contains($kw, $response)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * hint と correct_answer を助詞・区切り文字で分割してキーワード配列を返す
+     *
+     * @return array<string>
+     */
+    private function extractConceptKeywords(Question $question): array
+    {
+        $sources = array_filter([
+            $question->getHint(),
+            $question->getCorrectAnswer(),
+        ]);
+
+        $keywords = [];
+
+        foreach ($sources as $source) {
+            $parts = preg_split('/[・、。／\/\s　のやとをにへ]+/u', $source) ?: [];
+            foreach ($parts as $part) {
+                $part = trim($part);
+                if (mb_strlen($part) >= 2) {
+                    $keywords[] = $part;
+                }
+            }
+        }
+
+        return array_unique($keywords);
+    }
+
+    /**
+     * 回答が文章レベルかどうかを判定（助詞・文末表現の有無）
+     */
+    private function isSentenceLevel(string $response): bool
+    {
+        return (bool) preg_match(
+            '/[はがをにでもへとやのな]|です|ます|である|している|のこと|という|ような/',
+            $response
+        );
     }
 
     /**
