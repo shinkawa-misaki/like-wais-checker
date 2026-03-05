@@ -49,12 +49,6 @@
         </div>
       </div>
 
-      <!-- VCI（自由記述）の採点について -->
-      <div class="bg-blue-50 rounded-xl p-4 text-sm text-blue-800">
-        <p class="font-semibold mb-1">📝 VCI（言語理解）について</p>
-        <p>類似・語彙問題は自由記述です。回答後に採点基準が表示されるので、<strong>自己採点（0〜2点）</strong>を入力してください。</p>
-      </div>
-
       <!-- ボタン -->
       <div class="flex gap-3">
         <button
