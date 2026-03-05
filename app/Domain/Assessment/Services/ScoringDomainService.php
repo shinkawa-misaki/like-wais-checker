@@ -30,7 +30,13 @@ final class ScoringDomainService
 
     private function gradeExact(Question $question, Answer $answer): Score
     {
-        $isCorrect = strtolower(trim($answer->getResponse())) === strtolower(trim($question->getCorrectAnswer()));
+        // 未回答（空の回答）は0点
+        $response = trim($answer->getResponse());
+        if ($response === '') {
+            return Score::zero();
+        }
+
+        $isCorrect = strtolower($response) === strtolower(trim($question->getCorrectAnswer()));
 
         return $isCorrect ? new Score(1.0) : Score::zero();
     }
@@ -58,7 +64,13 @@ final class ScoringDomainService
                 continue;
             }
 
-            $isCorrect = strtolower(trim($answer->getResponse())) === strtolower(trim($question->getCorrectAnswer()));
+            // 未回答（空の回答）はスキップ
+            $response = trim($answer->getResponse());
+            if ($response === '') {
+                continue;
+            }
+
+            $isCorrect = strtolower($response) === strtolower(trim($question->getCorrectAnswer()));
 
             if ($isCorrect) {
                 $correct++;

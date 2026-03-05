@@ -29,7 +29,7 @@ final class QuestionSeeder extends Seeder
     }
 
     /**
-     * A: 類似（Similarities）- 30問のプールから10問ランダム選択
+     * A: 類似（Similarities）- 60問のプール全てを保存
      */
     private function seedSimilarities(): void
     {
@@ -64,12 +64,41 @@ final class QuestionSeeder extends Seeder
             ['content' => '誕生日と結婚記念日の共通点は何ですか？', 'hint' => '記念日'],
             ['content' => '野球とサッカーの共通点は何ですか？', 'hint' => 'スポーツ'],
             ['content' => '詩と小説の共通点は何ですか？', 'hint' => '文学作品'],
+            // 新規追加30問
+            ['content' => '火と水の共通点は何ですか？', 'hint' => '自然の要素'],
+            ['content' => '戦争と平和の共通点は何ですか？', 'hint' => '社会の状態'],
+            ['content' => '希望と絶望の共通点は何ですか？', 'hint' => '心の状態'],
+            ['content' => '始まりと終わりの共通点は何ですか？', 'hint' => '時間の概念'],
+            ['content' => '愛と憎しみの共通点は何ですか？', 'hint' => '強い感情'],
+            ['content' => '成功と失敗の共通点は何ですか？', 'hint' => '結果として'],
+            ['content' => '真実と嘘の共通点は何ですか？', 'hint' => '情報として'],
+            ['content' => '過去と未来の共通点は何ですか？', 'hint' => '時間軸'],
+            ['content' => '原因と結果の共通点は何ですか？', 'hint' => '因果関係'],
+            ['content' => '質問と回答の共通点は何ですか？', 'hint' => 'コミュニケーション'],
+            ['content' => 'テレビとラジオの共通点は何ですか？', 'hint' => 'メディア'],
+            ['content' => 'パンと米の共通点は何ですか？', 'hint' => '主食'],
+            ['content' => '蝶と花の共通点は何ですか？', 'hint' => '自然の美しさ'],
+            ['content' => '勝利と敗北の共通点は何ですか？', 'hint' => '競争の結果'],
+            ['content' => '光と影の共通点は何ですか？', 'hint' => '光の現象'],
+            ['content' => '記憶と忘却の共通点は何ですか？', 'hint' => '脳の働き'],
+            ['content' => '病気と健康の共通点は何ですか？', 'hint' => '身体の状態'],
+            ['content' => '善と悪の共通点は何ですか？', 'hint' => '道徳的概念'],
+            ['content' => '富と貧困の共通点は何ですか？', 'hint' => '経済状態'],
+            ['content' => '理想と現実の共通点は何ですか？', 'hint' => '認識'],
+            ['content' => '自由と束縛の共通点は何ですか？', 'hint' => '状態の概念'],
+            ['content' => '沈黙と騒音の共通点は何ですか？', 'hint' => '音の状態'],
+            ['content' => '秩序と混沌の共通点は何ですか？', 'hint' => 'システムの状態'],
+            ['content' => '知識と無知の共通点は何ですか？', 'hint' => '認識の状態'],
+            ['content' => '伝統と革新の共通点は何ですか？', 'hint' => '文化の要素'],
+            ['content' => '個人と集団の共通点は何ですか？', 'hint' => '社会の単位'],
+            ['content' => '科学と芸術の共通点は何ですか？', 'hint' => '人間の営み'],
+            ['content' => '肉体と精神の共通点は何ですか？', 'hint' => '人間の構成要素'],
+            ['content' => '言葉と沈黙の共通点は何ですか？', 'hint' => 'コミュニケーション手段'],
+            ['content' => '夢と現実の共通点は何ですか？', 'hint' => '経験'],
         ];
 
-        // ランダムに10問選択
-        $selectedQuestions = $this->selectRandom($questionPool, 10);
-
-        foreach ($selectedQuestions as $index => $question) {
+        // 全ての問題をデータベースに保存
+        foreach ($questionPool as $index => $question) {
             QuestionModel::create([
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'A',
@@ -85,7 +114,7 @@ final class QuestionSeeder extends Seeder
     }
 
     /**
-     * B: 語彙（Vocabulary）- 30問のプールから10問ランダム選択
+     * B: 語彙（Vocabulary）- 60問のプール全てを保存
      */
     private function seedVocabulary(): void
     {
@@ -120,11 +149,41 @@ final class QuestionSeeder extends Seeder
             ['word' => '思慮深い', 'hint' => 'よく考えて行動すること'],
             ['word' => '勤勉', 'hint' => 'まじめに働くこと'],
             ['word' => '友情', 'hint' => '友達との絆'],
+            // 新規追加30問
+            ['word' => '誠意', 'hint' => '真心を持って接すること'],
+            ['word' => '率直', 'hint' => 'ありのままを伝えること'],
+            ['word' => '寛恕', 'hint' => '過ちを許すこと'],
+            ['word' => '清廉', 'hint' => '心が清く正しいこと'],
+            ['word' => '高潔', 'hint' => '品格が高く立派なこと'],
+            ['word' => '真摯', 'hint' => 'まじめで熱心なこと'],
+            ['word' => '温厚', 'hint' => '穏やかで優しいこと'],
+            ['word' => '冷静', 'hint' => '落ち着いて判断すること'],
+            ['word' => '明朗', 'hint' => '明るく朗らかなこと'],
+            ['word' => '実直', 'hint' => 'まじめで正直なこと'],
+            ['word' => '純粋', 'hint' => '混じり気がないこと'],
+            ['word' => '賢明', 'hint' => '知恵があり判断力に優れること'],
+            ['word' => '博識', 'hint' => '広い知識を持つこと'],
+            ['word' => '機知', 'hint' => '状況に応じた素早い判断力'],
+            ['word' => '洗練', 'hint' => '磨かれて上品になること'],
+            ['word' => '品格', 'hint' => '人としての気品'],
+            ['word' => '威厳', 'hint' => '堂々として尊敬される様子'],
+            ['word' => '風格', 'hint' => '立派で貫禄があること'],
+            ['word' => '節度', 'hint' => '度を越さない適度な行動'],
+            ['word' => '配慮', 'hint' => '相手の立場を考えること'],
+            ['word' => '気配り', 'hint' => '細かく注意を向けること'],
+            ['word' => '思いやり', 'hint' => '他人の気持ちを察する心'],
+            ['word' => '共感', 'hint' => '相手の感情を理解すること'],
+            ['word' => '寄り添う', 'hint' => '側で支えること'],
+            ['word' => '奉仕', 'hint' => '人のために尽くすこと'],
+            ['word' => '貢献', 'hint' => '役に立つこと'],
+            ['word' => '犠牲', 'hint' => '自分を投げ出すこと'],
+            ['word' => '献身的', 'hint' => '身を捧げて尽くすこと'],
+            ['word' => '無私', 'hint' => '私心がないこと'],
+            ['word' => '公正', 'hint' => '偏りなく正しいこと'],
         ];
 
-        $selectedQuestions = $this->selectRandom($questionPool, 10);
-
-        foreach ($selectedQuestions as $index => $question) {
+        // 全ての問題をデータベースに保存
+        foreach ($questionPool as $index => $question) {
             QuestionModel::create([
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'B',
@@ -140,7 +199,7 @@ final class QuestionSeeder extends Seeder
     }
 
     /**
-     * C: 規則発見（Pattern Recognition）- 24問のプールから12問ランダム選択
+     * C: 規則発見（Pattern Recognition）- 50問のプール全てを保存
      */
     private function seedPatternRecognition(): void
     {
@@ -169,11 +228,36 @@ final class QuestionSeeder extends Seeder
             ['pattern' => '125, 100, 75, 50, ?', 'options' => ['A' => '20', 'B' => '25', 'C' => '30', 'D' => '35'], 'correct' => 'B'],
             ['pattern' => '8, 16, 32, 64, ?', 'options' => ['A' => '96', 'B' => '128', 'C' => '160', 'D' => '192'], 'correct' => 'B'],
             ['pattern' => '17, 34, 51, 68, ?', 'options' => ['A' => '80', 'B' => '85', 'C' => '90', 'D' => '95'], 'correct' => 'B'],
+            // 新規追加26問
+            ['pattern' => '9, 18, 27, 36, ?', 'options' => ['A' => '42', 'B' => '45', 'C' => '48', 'D' => '54'], 'correct' => 'B'],
+            ['pattern' => '200, 150, 100, 50, ?', 'options' => ['A' => '0', 'B' => '10', 'C' => '25', 'D' => '-50'], 'correct' => 'A'],
+            ['pattern' => '5, 25, 125, 625, ?', 'options' => ['A' => '2500', 'B' => '3125', 'C' => '3750', 'D' => '5000'], 'correct' => 'B'],
+            ['pattern' => '144, 121, 100, 81, ?', 'options' => ['A' => '60', 'B' => '64', 'C' => '72', 'D' => '49'], 'correct' => 'B'],
+            ['pattern' => '12, 24, 36, 48, ?', 'options' => ['A' => '54', 'B' => '60', 'C' => '64', 'D' => '72'], 'correct' => 'B'],
+            ['pattern' => '1, 8, 27, 64, ?', 'options' => ['A' => '100', 'B' => '125', 'C' => '144', 'D' => '216'], 'correct' => 'B'],
+            ['pattern' => '256, 128, 64, 32, ?', 'options' => ['A' => '8', 'B' => '16', 'C' => '24', 'D' => '12'], 'correct' => 'B'],
+            ['pattern' => '2, 5, 11, 23, ?', 'options' => ['A' => '35', 'B' => '47', 'C' => '51', 'D' => '46'], 'correct' => 'B'],
+            ['pattern' => '19, 38, 57, 76, ?', 'options' => ['A' => '90', 'B' => '95', 'C' => '100', 'D' => '105'], 'correct' => 'B'],
+            ['pattern' => '1000, 900, 800, 700, ?', 'options' => ['A' => '500', 'B' => '600', 'C' => '650', 'D' => '550'], 'correct' => 'B'],
+            ['pattern' => '0, 1, 1, 2, 3, 5, 8, ?', 'options' => ['A' => '11', 'B' => '13', 'C' => '15', 'D' => '16'], 'correct' => 'B'],
+            ['pattern' => '14, 28, 42, 56, ?', 'options' => ['A' => '64', 'B' => '70', 'C' => '72', 'D' => '84'], 'correct' => 'B'],
+            ['pattern' => '512, 256, 128, 64, ?', 'options' => ['A' => '16', 'B' => '32', 'C' => '48', 'D' => '24'], 'correct' => 'B'],
+            ['pattern' => '20, 40, 60, 80, ?', 'options' => ['A' => '90', 'B' => '100', 'C' => '110', 'D' => '120'], 'correct' => 'B'],
+            ['pattern' => '36, 49, 64, 81, ?', 'options' => ['A' => '90', 'B' => '100', 'C' => '110', 'D' => '121'], 'correct' => 'B'],
+            ['pattern' => '16, 32, 48, 64, ?', 'options' => ['A' => '72', 'B' => '80', 'C' => '88', 'D' => '96'], 'correct' => 'B'],
+            ['pattern' => '10, 9, 7, 4, ?', 'options' => ['A' => '-1', 'B' => '0', 'C' => '1', 'D' => '2'], 'correct' => 'B'],
+            ['pattern' => '21, 42, 63, 84, ?', 'options' => ['A' => '100', 'B' => '105', 'C' => '110', 'D' => '126'], 'correct' => 'B'],
+            ['pattern' => '2, 3, 5, 7, 11, ?', 'options' => ['A' => '12', 'B' => '13', 'C' => '15', 'D' => '17'], 'correct' => 'B'],
+            ['pattern' => '18, 36, 54, 72, ?', 'options' => ['A' => '80', 'B' => '90', 'C' => '96', 'D' => '108'], 'correct' => 'B'],
+            ['pattern' => '25, 50, 75, 100, ?', 'options' => ['A' => '120', 'B' => '125', 'C' => '130', 'D' => '150'], 'correct' => 'B'],
+            ['pattern' => '729, 243, 81, 27, ?', 'options' => ['A' => '3', 'B' => '9', 'C' => '18', 'D' => '12'], 'correct' => 'B'],
+            ['pattern' => '4, 9, 16, 25, 36, ?', 'options' => ['A' => '42', 'B' => '49', 'C' => '54', 'D' => '64'], 'correct' => 'B'],
+            ['pattern' => '23, 46, 69, 92, ?', 'options' => ['A' => '110', 'B' => '115', 'C' => '120', 'D' => '125'], 'correct' => 'B'],
+            ['pattern' => '1024, 512, 256, 128, ?', 'options' => ['A' => '32', 'B' => '64', 'C' => '96', 'D' => '48'], 'correct' => 'B'],
         ];
 
-        $selectedQuestions = $this->selectRandom($questionPool, 12);
-
-        foreach ($selectedQuestions as $index => $question) {
+        // 全ての問題をデータベースに保存
+        foreach ($questionPool as $index => $question) {
             QuestionModel::create([
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'C',
@@ -189,51 +273,60 @@ final class QuestionSeeder extends Seeder
     }
 
     /**
-     * D: 簡易マトリクス（Matrix Reasoning）- 20問のプールから10問ランダム選択
+     * D: 簡易マトリクス（Matrix Reasoning）- 50問のプール全てを保存
      */
     private function seedMatrixReasoning(): void
     {
         $questionPool = [];
 
-        // パターン1: 図形の数が増えるパターン
-        for ($i = 1; $i <= 5; $i++) {
+        // パターン1: 図形の数が増えるパターン (10問)
+        for ($i = 1; $i <= 10; $i++) {
             $questionPool[] = [
-                'description' => "図形が{$i}個から" . ($i + 1) . "個に増える規則",
+                'description' => "図形が{$i}個から段階的に増える規則 (バリエーション{$i})",
                 'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
                 'correct' => 'B',
             ];
         }
 
-        // パターン2: 図形が回転するパターン
-        for ($i = 1; $i <= 5; $i++) {
+        // パターン2: 図形が回転するパターン (10問)
+        for ($i = 1; $i <= 10; $i++) {
+            $angle = ($i * 30) % 360;
             $questionPool[] = [
-                'description' => "図形が" . ($i * 45) . "度回転する規則",
+                'description' => "図形が{$angle}度回転する規則 (バリエーション{$i})",
                 'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
                 'correct' => 'B',
             ];
         }
 
-        // パターン3: 色が変わるパターン
-        for ($i = 1; $i <= 5; $i++) {
+        // パターン3: 色や濃淡が変わるパターン (10問)
+        for ($i = 1; $i <= 10; $i++) {
             $questionPool[] = [
-                'description' => "図形の色が段階的に変わる規則",
+                'description' => "図形の色や濃淡が段階的に変わる規則 (バリエーション{$i})",
                 'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
                 'correct' => 'B',
             ];
         }
 
-        // パターン4: サイズが変わるパターン
-        for ($i = 1; $i <= 5; $i++) {
+        // パターン4: サイズが変わるパターン (10問)
+        for ($i = 1; $i <= 10; $i++) {
             $questionPool[] = [
-                'description' => "図形のサイズが変化する規則",
+                'description' => "図形のサイズが段階的に変化する規則 (バリエーション{$i})",
                 'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
                 'correct' => 'B',
             ];
         }
 
-        $selectedQuestions = $this->selectRandom($questionPool, 10);
+        // パターン5: 位置が変わるパターン (10問)
+        for ($i = 1; $i <= 10; $i++) {
+            $questionPool[] = [
+                'description' => "図形の位置が移動する規則 (バリエーション{$i})",
+                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
+                'correct' => 'B',
+            ];
+        }
 
-        foreach ($selectedQuestions as $index => $question) {
+        // 全ての問題をデータベースに保存
+        foreach ($questionPool as $index => $question) {
             QuestionModel::create([
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'D',
@@ -249,24 +342,27 @@ final class QuestionSeeder extends Seeder
     }
 
     /**
-     * E: 数唱（Digit Span）- 27系列のプールから18系列ランダム選択
+     * E: 数唱（Digit Span）- 60系列のプール全てを保存
      */
     private function seedDigitSpan(): void
     {
         $sequencePool = [
-            // 3桁
+            // 3桁 (15パターン)
             '258', '714', '639', '482', '157', '926', '341', '785', '692',
-            // 4桁
+            '531', '846', '279', '164', '953', '372',
+            // 4桁 (15パターン)
             '5827', '9146', '3682', '7459', '1834', '6291', '4753', '8126', '2947',
-            // 5桁
+            '3951', '7284', '5173', '9426', '1658', '8397',
+            // 5桁 (15パターン)
             '39825', '74162', '58394', '91647', '26183', '47925', '83516', '65829', '12749',
-            // 6桁
+            '54782', '91356', '28741', '63195', '45827', '71964',
+            // 6桁 (15パターン)
             '582749', '914637', '368259', '745182', '183649', '629174', '475386', '812693', '294751',
+            '537821', '946257', '128574', '739164', '461852', '825379',
         ];
 
-        $selectedSequences = $this->selectRandom($sequencePool, 18);
-
-        foreach ($selectedSequences as $index => $sequence) {
+        // 全ての系列をデータベースに保存
+        foreach ($sequencePool as $index => $sequence) {
             QuestionModel::create([
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'E',
@@ -282,7 +378,7 @@ final class QuestionSeeder extends Seeder
     }
 
     /**
-     * F: 暗算（Arithmetic）- 20問のプールから10問ランダム選択
+     * F: 暗算（Arithmetic）- 50問のプール全てを保存
      */
     private function seedArithmetic(): void
     {
@@ -307,11 +403,41 @@ final class QuestionSeeder extends Seeder
             ['problem' => '84 - 29 = ?', 'options' => ['A' => '53', 'B' => '55', 'C' => '57', 'D' => '59'], 'correct' => 'B'],
             ['problem' => '16 × 7 = ?', 'options' => ['A' => '108', 'B' => '112', 'C' => '116', 'D' => '120'], 'correct' => 'B'],
             ['problem' => '120 ÷ 10 = ?', 'options' => ['A' => '10', 'B' => '12', 'C' => '14', 'D' => '16'], 'correct' => 'B'],
+            // 新規追加30問
+            ['problem' => '37 + 49 = ?', 'options' => ['A' => '84', 'B' => '86', 'C' => '88', 'D' => '90'], 'correct' => 'B'],
+            ['problem' => '63 - 27 = ?', 'options' => ['A' => '34', 'B' => '36', 'C' => '38', 'D' => '40'], 'correct' => 'B'],
+            ['problem' => '13 × 8 = ?', 'options' => ['A' => '96', 'B' => '104', 'C' => '108', 'D' => '112'], 'correct' => 'B'],
+            ['problem' => '132 ÷ 11 = ?', 'options' => ['A' => '10', 'B' => '12', 'C' => '13', 'D' => '14'], 'correct' => 'B'],
+            ['problem' => '72 + 59 = ?', 'options' => ['A' => '129', 'B' => '131', 'C' => '133', 'D' => '135'], 'correct' => 'B'],
+            ['problem' => '98 - 54 = ?', 'options' => ['A' => '42', 'B' => '44', 'C' => '46', 'D' => '48'], 'correct' => 'B'],
+            ['problem' => '17 × 6 = ?', 'options' => ['A' => '96', 'B' => '102', 'C' => '108', 'D' => '114'], 'correct' => 'B'],
+            ['problem' => '156 ÷ 13 = ?', 'options' => ['A' => '10', 'B' => '12', 'C' => '14', 'D' => '16'], 'correct' => 'B'],
+            ['problem' => '41 + 78 = ?', 'options' => ['A' => '117', 'B' => '119', 'C' => '121', 'D' => '123'], 'correct' => 'B'],
+            ['problem' => '87 - 39 = ?', 'options' => ['A' => '46', 'B' => '48', 'C' => '50', 'D' => '52'], 'correct' => 'B'],
+            ['problem' => '19 × 4 = ?', 'options' => ['A' => '72', 'B' => '76', 'C' => '80', 'D' => '84'], 'correct' => 'B'],
+            ['problem' => '168 ÷ 14 = ?', 'options' => ['A' => '10', 'B' => '12', 'C' => '14', 'D' => '16'], 'correct' => 'B'],
+            ['problem' => '56 + 67 = ?', 'options' => ['A' => '121', 'B' => '123', 'C' => '125', 'D' => '127'], 'correct' => 'B'],
+            ['problem' => '76 - 42 = ?', 'options' => ['A' => '32', 'B' => '34', 'C' => '36', 'D' => '38'], 'correct' => 'B'],
+            ['problem' => '14 × 9 = ?', 'options' => ['A' => '118', 'B' => '126', 'C' => '132', 'D' => '140'], 'correct' => 'B'],
+            ['problem' => '180 ÷ 15 = ?', 'options' => ['A' => '10', 'B' => '12', 'C' => '14', 'D' => '16'], 'correct' => 'B'],
+            ['problem' => '64 + 58 = ?', 'options' => ['A' => '120', 'B' => '122', 'C' => '124', 'D' => '126'], 'correct' => 'B'],
+            ['problem' => '93 - 56 = ?', 'options' => ['A' => '35', 'B' => '37', 'C' => '39', 'D' => '41'], 'correct' => 'B'],
+            ['problem' => '21 × 5 = ?', 'options' => ['A' => '100', 'B' => '105', 'C' => '110', 'D' => '115'], 'correct' => 'B'],
+            ['problem' => '195 ÷ 13 = ?', 'options' => ['A' => '13', 'B' => '15', 'C' => '17', 'D' => '19'], 'correct' => 'B'],
+            ['problem' => '88 + 47 = ?', 'options' => ['A' => '133', 'B' => '135', 'C' => '137', 'D' => '139'], 'correct' => 'B'],
+            ['problem' => '104 - 68 = ?', 'options' => ['A' => '34', 'B' => '36', 'C' => '38', 'D' => '40'], 'correct' => 'B'],
+            ['problem' => '23 × 4 = ?', 'options' => ['A' => '88', 'B' => '92', 'C' => '96', 'D' => '100'], 'correct' => 'B'],
+            ['problem' => '210 ÷ 14 = ?', 'options' => ['A' => '13', 'B' => '15', 'C' => '17', 'D' => '19'], 'correct' => 'B'],
+            ['problem' => '79 + 66 = ?', 'options' => ['A' => '143', 'B' => '145', 'C' => '147', 'D' => '149'], 'correct' => 'B'],
+            ['problem' => '112 - 75 = ?', 'options' => ['A' => '35', 'B' => '37', 'C' => '39', 'D' => '41'], 'correct' => 'B'],
+            ['problem' => '26 × 3 = ?', 'options' => ['A' => '74', 'B' => '78', 'C' => '82', 'D' => '86'], 'correct' => 'B'],
+            ['problem' => '224 ÷ 16 = ?', 'options' => ['A' => '12', 'B' => '14', 'C' => '16', 'D' => '18'], 'correct' => 'B'],
+            ['problem' => '95 + 38 = ?', 'options' => ['A' => '131', 'B' => '133', 'C' => '135', 'D' => '137'], 'correct' => 'B'],
+            ['problem' => '127 - 89 = ?', 'options' => ['A' => '36', 'B' => '38', 'C' => '40', 'D' => '42'], 'correct' => 'B'],
         ];
 
-        $selectedQuestions = $this->selectRandom($questionPool, 10);
-
-        foreach ($selectedQuestions as $index => $question) {
+        // 全ての問題をデータベースに保存
+        foreach ($questionPool as $index => $question) {
             QuestionModel::create([
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'F',
@@ -327,7 +453,7 @@ final class QuestionSeeder extends Seeder
     }
 
     /**
-     * G: 探索（Symbol Search）- 36問のプールから24問ランダム選択
+     * G: 探索（Symbol Search）- 36問のプール全てを保存
      */
     private function seedSymbolSearch(): void
     {
@@ -342,9 +468,8 @@ final class QuestionSeeder extends Seeder
             ];
         }
 
-        $selectedQuestions = $this->selectRandom($questionPool, 24);
-
-        foreach ($selectedQuestions as $index => $question) {
+        // 全ての問題をデータベースに保存
+        foreach ($questionPool as $index => $question) {
             QuestionModel::create([
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'G',
@@ -360,7 +485,7 @@ final class QuestionSeeder extends Seeder
     }
 
     /**
-     * H: 符号化（Coding）- 90問のプールから60問ランダム選択
+     * H: 符号化（Coding）- 90問のプール全てを保存
      */
     private function seedCoding(): void
     {
@@ -378,9 +503,8 @@ final class QuestionSeeder extends Seeder
             ];
         }
 
-        $selectedQuestions = $this->selectRandom($questionPool, 60);
-
-        foreach ($selectedQuestions as $index => $question) {
+        // 全ての問題をデータベースに保存
+        foreach ($questionPool as $index => $question) {
             QuestionModel::create([
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'H',
@@ -393,19 +517,6 @@ final class QuestionSeeder extends Seeder
                 'hint' => '表を参照してください',
             ]);
         }
-    }
-
-    /**
-     * 配列からランダムに指定数の要素を選択
-     */
-    private function selectRandom(array $array, int $count): array
-    {
-        $keys = array_rand($array, min($count, count($array)));
-        if (!is_array($keys)) {
-            $keys = [$keys];
-        }
-
-        return array_map(fn($key) => $array[$key], $keys);
     }
 }
 
