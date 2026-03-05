@@ -45,9 +45,16 @@
                     {{ score.level }}
                   </span>
                 </div>
-                <span class="text-lg font-bold tabular-nums" :class="scoreColor(score.percentage)">
-                  {{ score.percentage }}%
-                </span>
+                <div class="text-right">
+                  <div class="text-2xl font-bold tabular-nums" :class="iqColor(score.pseudoIQ)">
+                    {{ score.pseudoIQ }}
+                  </div>
+                  <div class="text-xs text-gray-400">擬似IQ</div>
+                </div>
+              </div>
+              <!-- IQ解釈 -->
+              <div class="mb-2 text-xs" :class="iqColor(score.pseudoIQ)">
+                {{ score.iqInterpretation }}
               </div>
               <!-- プログレスバー -->
               <div class="w-full bg-gray-100 rounded-full h-3 mb-2">
@@ -57,7 +64,7 @@
                 ></div>
               </div>
               <p class="text-xs text-gray-500">
-                得点：{{ score.rawScore }} / {{ score.maxScore }}点
+                得点：{{ score.rawScore }} / {{ score.maxScore }}点（{{ score.percentage }}%）
               </p>
             </div>
           </div>
@@ -72,9 +79,15 @@
               :key="s.indexType"
               class="bg-green-50 border border-green-200 rounded-xl p-4"
             >
-              <div class="flex items-center gap-2 mb-2">
-                <span class="text-sm font-bold text-green-800">{{ s.label }}</span>
-                <span class="text-sm font-bold text-green-600">{{ s.percentage }}%</span>
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-bold text-green-800">{{ s.label }}</span>
+                  <span class="text-xs text-green-600">{{ s.percentage }}%</span>
+                </div>
+                <div class="text-right">
+                  <div class="text-xl font-bold text-green-700">IQ {{ s.pseudoIQ }}</div>
+                  <div class="text-xs text-green-600">{{ s.iqInterpretation }}</div>
+                </div>
               </div>
               <p class="text-sm text-green-700">{{ s.interpretation }}</p>
             </div>
@@ -90,9 +103,15 @@
               :key="w.indexType"
               class="bg-orange-50 border border-orange-200 rounded-xl p-4"
             >
-              <div class="flex items-center gap-2 mb-2">
-                <span class="text-sm font-bold text-orange-800">{{ w.label }}</span>
-                <span class="text-sm font-bold text-orange-600">{{ w.percentage }}%</span>
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-bold text-orange-800">{{ w.label }}</span>
+                  <span class="text-xs text-orange-600">{{ w.percentage }}%</span>
+                </div>
+                <div class="text-right">
+                  <div class="text-xl font-bold text-orange-700">IQ {{ w.pseudoIQ }}</div>
+                  <div class="text-xs text-orange-600">{{ w.iqInterpretation }}</div>
+                </div>
               </div>
               <p class="text-sm text-orange-700">{{ w.interpretation }}</p>
             </div>
@@ -220,6 +239,14 @@ function barColor(pct) {
     if (pct >= 41) return 'bg-gray-400';
     if (pct >= 21) return 'bg-orange-400';
     return 'bg-red-400';
+}
+
+function iqColor(iq) {
+    if (iq >= 130) return 'text-green-600';
+    if (iq >= 110) return 'text-blue-600';
+    if (iq >= 90) return 'text-gray-700';
+    if (iq >= 70) return 'text-orange-600';
+    return 'text-red-600';
 }
 
 function restart() {

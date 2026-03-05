@@ -77,6 +77,10 @@ final class GenerateReportUseCase
             $percentage = $score->toPercentage($indexType->maxScore());
             $level = $this->scoringService->percentageLevel($percentage);
 
+            // 擬似IQスコアを計算
+            $pseudoIQ = $this->scoringService->calculatePseudoIQ($percentage);
+            $iqInterpretation = $this->scoringService->interpretIQ($pseudoIQ);
+
             $isStrength = $percentage >= 61;
             $interpretation = $isStrength
                 ? $indexType->strengthDescription()
@@ -89,6 +93,8 @@ final class GenerateReportUseCase
                 maxScore: $indexType->maxScore(),
                 percentage: $percentage,
                 level: $level,
+                pseudoIQ: $pseudoIQ,
+                iqInterpretation: $iqInterpretation,
                 interpretation: $interpretation,
             );
         }
