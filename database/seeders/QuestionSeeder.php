@@ -462,9 +462,30 @@ final class QuestionSeeder extends Seeder
 
         for ($i = 0; $i < 36; $i++) {
             $targetSymbol = $symbols[$i % count($symbols)];
+            // ランダムに右側のグループを生成（5つの記号）
+            $rightGroup = [];
+            $hasTarget = ($i % 2 === 0); // 半分は含まれる、半分は含まれない
+
+            if ($hasTarget) {
+                // ターゲットを含める
+                $rightGroup[] = $targetSymbol;
+                // 残り4つをランダムに追加
+                $otherSymbols = array_values(array_diff($symbols, [$targetSymbol]));
+                shuffle($otherSymbols);
+                $rightGroup = array_merge($rightGroup, array_slice($otherSymbols, 0, 4));
+                shuffle($rightGroup);
+            } else {
+                // ターゲットを含めない
+                $otherSymbols = array_values(array_diff($symbols, [$targetSymbol]));
+                shuffle($otherSymbols);
+                $rightGroup = array_slice($otherSymbols, 0, 5);
+            }
+
             $questionPool[] = [
                 'target' => $targetSymbol,
-                'description' => "記号 {$targetSymbol} が右側のグループに含まれているか答えてください",
+                'rightGroup' => implode(' ', $rightGroup),
+                'correct' => $hasTarget ? '○' : '×',
+                'description' => "左側の記号【{$targetSymbol}】が、右側のグループ【" . implode(' ', $rightGroup) . "】に含まれていますか？",
             ];
         }
 
@@ -476,7 +497,7 @@ final class QuestionSeeder extends Seeder
                 'sequence_number' => $index + 1,
                 'content' => $question['description'],
                 'question_type' => 'time_based',
-                'correct_answer' => '○',
+                'correct_answer' => $question['correct'],
                 'options' => ['○' => 'はい', '×' => 'いいえ'],
                 'max_points' => 1,
                 'hint' => null,
