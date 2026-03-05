@@ -18,8 +18,8 @@
         v-for="(label, key) in question.options"
         :key="key"
         @click="select(key)"
+        class="p-3 rounded-xl border-2 transition-all text-left"
         :class="[
-          'py-3 px-4 rounded-xl border-2 text-left transition-all',
           selected === key
             ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
             : 'border-gray-200 text-gray-700 hover:border-gray-300 bg-white'
@@ -60,6 +60,7 @@ function confirm() {
     emit('answered', {
         question_id: props.question.id,
         response: selected.value,
+        awarded_score: null,
     });
     selected.value = null;
 }

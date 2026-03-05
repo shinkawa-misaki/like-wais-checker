@@ -93,6 +93,12 @@
             :question="currentQuestion"
             @answered="onAnswered"
           />
+          <MatrixReasoningQuestion
+            v-else-if="subtestType === 'D'"
+            :key="`question-${currentIndex}`"
+            :question="currentQuestion"
+            @answered="onAnswered"
+          />
           <MultipleChoiceQuestion
             v-else-if="currentQuestion?.questionType === 'multiple_choice'"
             :key="`question-${currentIndex}`"
@@ -149,6 +155,7 @@ import { useRouter } from 'vue-router';
 import { useAssessmentStore, SUBTEST_ORDER, SUBTEST_META } from '../stores/assessment.js';
 import FreeTextQuestion from '../components/FreeTextQuestion.vue';
 import MultipleChoiceQuestion from '../components/MultipleChoiceQuestion.vue';
+import MatrixReasoningQuestion from '../components/MatrixReasoningQuestion.vue';
 import SequenceQuestion from '../components/SequenceQuestion.vue';
 import TimedSubtest from '../components/TimedSubtest.vue';
 
