@@ -176,12 +176,12 @@ final class ScoringDomainService
         $correct    = $question->getCorrectAnswer();
 
         // ① correct_answer との共通部分文字列チェック（3文字以上）
-        if ($this->hasCommonSubstring($response, $correct, 3)) {
+        if ($correct !== null && $this->hasCommonSubstring($response, $correct, 3)) {
             return new Score($length >= 8 ? 2.0 : 1.0);
         }
 
         // ② ・区切りキーワードが存在する場合（類似問題の correct_answer 形式）
-        $keywords = $this->extractKeywords($correct);
+        $keywords = $this->extractKeywords($correct ?? '');
         if (count($keywords) >= 2) {
             foreach ($keywords as $kw) {
                 if (str_contains($response, $kw)) {
