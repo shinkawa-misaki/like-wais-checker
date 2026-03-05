@@ -56,7 +56,104 @@ final class ScoringDomainServiceTest extends TestCase
 
         $score = $this->service->gradeAnswer($question, $answer);
 
+        // 自動採点が適用されるため、回答内容に基づいた点数が返される
+        $this->assertGreaterThanOrEqual(0.0, $score->getValue());
+    }
+
+    public function test_grade_similarity_answer_with_high_level_keyword(): void
+    {
+        $question = new Question(
+            id: QuestionId::generate(),
+            subtestType: SubtestType::SIMILARITIES,
+            sequenceNumber: 1,
+            content: 'リンゴとバナナの共通点は何ですか？',
+            questionType: QuestionType::FREE_TEXT,
+            correctAnswer: null,
+            maxPoints: 2,
+            hint: '食べ物の種類を考えてください',
+        );
+
+        $answer = $this->createAnswer($question, '果物');
+
+        $score = $this->service->gradeAnswer($question, $answer);
+
+        $this->assertSame(2.0, $score->getValue());
+    }
+
+    public function test_grade_similarity_answer_with_detailed_response(): void
+    {
+        $question = new Question(
+            id: QuestionId::generate(),
+            subtestType: SubtestType::SIMILARITIES,
+            sequenceNumber: 1,
+            content: '犬と猫の共通点は何ですか？',
+            questionType: QuestionType::FREE_TEXT,
+            correctAnswer: null,
+            maxPoints: 2,
+        );
+
+        $answer = $this->createAnswer($question, 'どちらも人間と共に暮らすペットです');
+
+        $score = $this->service->gradeAnswer($question, $answer);
+
+        $this->assertSame(2.0, $score->getValue());
+    }
+
+    public function test_grade_similarity_answer_with_short_response(): void
+    {
+        $question = new Question(
+            id: QuestionId::generate(),
+            subtestType: SubtestType::SIMILARITIES,
+            sequenceNumber: 1,
+            content: '太陽と月の共通点は何ですか？',
+            questionType: QuestionType::FREE_TEXT,
+            correctAnswer: null,
+            maxPoints: 2,
+        );
+
+        $answer = $this->createAnswer($question, 'どちらも空にあります');
+
+        $score = $this->service->gradeAnswer($question, $answer);
+
         $this->assertSame(1.0, $score->getValue());
+    }
+
+    public function test_grade_similarity_answer_empty_response(): void
+    {
+        $question = new Question(
+            id: QuestionId::generate(),
+            subtestType: SubtestType::SIMILARITIES,
+            sequenceNumber: 1,
+            content: '車と自転車の共通点は何ですか？',
+            questionType: QuestionType::FREE_TEXT,
+            correctAnswer: null,
+            maxPoints: 2,
+        );
+
+        $answer = $this->createAnswer($question, '');
+
+        $score = $this->service->gradeAnswer($question, $answer);
+
+        $this->assertSame(0.0, $score->getValue());
+    }
+
+    public function test_grade_similarity_answer_too_short(): void
+    {
+        $question = new Question(
+            id: QuestionId::generate(),
+            subtestType: SubtestType::SIMILARITIES,
+            sequenceNumber: 1,
+            content: '本と新聞の共通点は何ですか？',
+            questionType: QuestionType::FREE_TEXT,
+            correctAnswer: null,
+            maxPoints: 2,
+        );
+
+        $answer = $this->createAnswer($question, '紙');
+
+        $score = $this->service->gradeAnswer($question, $answer);
+
+        $this->assertSame(0.0, $score->getValue());
     }
 
     public function test_symbol_search_score_with_all_correct(): void

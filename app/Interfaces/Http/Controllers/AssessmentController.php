@@ -69,7 +69,7 @@ final class AssessmentController extends Controller
             $answerInputs = array_map(
                 fn (array $a) => new AnswerInputDto(
                     questionId: $a['question_id'],
-                    response: $a['response'],
+                    response: $a['response'] ?? '', // nullの場合は空文字列を使用
                     awardedScore: isset($a['awarded_score']) ? (float) $a['awarded_score'] : null,
                 ),
                 $request->validated('answers')

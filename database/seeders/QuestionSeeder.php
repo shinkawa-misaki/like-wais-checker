@@ -15,7 +15,8 @@ final class QuestionSeeder extends Seeder
      */
     public function run(): void
     {
-        // 既存のデータをすべて削除
+        // 外部キー制約を考慮して、関連データを先に削除
+        \DB::table('answers')->delete();
         QuestionModel::query()->delete();
 
         $this->seedSimilarities();
@@ -262,7 +263,7 @@ final class QuestionSeeder extends Seeder
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'C',
                 'sequence_number' => $index + 1,
-                'content' => "次の数列の規則性を見つけて、?に入る数を選んでください：{$question['pattern']}",
+                'content' => "次の数列の規則性を見つけて、?に入る数を選んでください：\n\n{$question['pattern']}",
                 'question_type' => 'multiple_choice',
                 'correct_answer' => $question['correct'],
                 'options' => $question['options'],
@@ -279,49 +280,147 @@ final class QuestionSeeder extends Seeder
     {
         $questionPool = [];
 
-        // パターン1: 図形の数が増えるパターン (10問)
-        for ($i = 1; $i <= 10; $i++) {
+        // パターン1: 複合規則 - 記号と数が両方変化 (10問)
+        $complexPatterns = [
+            ['symbols' => ['●', '■', '▲'], 'counts' => [1, 2, 3]],
+            ['symbols' => ['◆', '★', '◎'], 'counts' => [1, 2, 3]],
+            ['symbols' => ['▽', '◇', '○'], 'counts' => [2, 3, 4]],
+            ['symbols' => ['△', '□', '■'], 'counts' => [1, 3, 2]],
+            ['symbols' => ['☆', '●', '▲'], 'counts' => [3, 2, 1]],
+        ];
+
+        for ($i = 0; $i < 10; $i++) {
+            $pattern = $complexPatterns[$i % count($complexPatterns)];
+            $s1 = str_repeat($pattern['symbols'][0], $pattern['counts'][0]);
+            $s2 = str_repeat($pattern['symbols'][1], $pattern['counts'][1]);
+            $s3 = str_repeat($pattern['symbols'][2], $pattern['counts'][2]);
+
+            $matrixPattern = "
+【3×3マトリクス】
+1行目: {$s1} | {$s2} | {$s3}
+2行目: {$s2} | {$s3} | {$s1}
+3行目: {$s3} | {$s1} | ?
+            ";
             $questionPool[] = [
-                'description' => "図形が{$i}個から段階的に増える規則 (バリエーション{$i})",
-                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
+                'description' => "3×3のマトリクスで、各行が循環パターンで配置されています。規則を見つけて空欄を埋めてください。",
+                'pattern' => $matrixPattern,
+                'options' => [
+                    'A' => $s1,
+                    'B' => $s2,
+                    'C' => $s3,
+                    'D' => str_repeat($pattern['symbols'][0], 4)
+                ],
                 'correct' => 'B',
             ];
         }
 
-        // パターン2: 図形が回転するパターン (10問)
-        for ($i = 1; $i <= 10; $i++) {
-            $angle = ($i * 30) % 360;
+        // パターン2: 位置と形状の複合規則 (10問)
+        for ($i = 0; $i < 10; $i++) {
+            $shapes = ['●', '■', '▲', '◆', '★'];
+            $positions = ['左', '中央', '右'];
+
+            $matrixPattern = "
+【3×3マトリクス - 位置と形状】
+1行目: 左に● | 中央に■ | 右に▲
+2行目: 中央に● | 右に■ | 左に▲
+3行目: 右に● | 左に■ | ?
+            ";
             $questionPool[] = [
-                'description' => "図形が{$angle}度回転する規則 (バリエーション{$i})",
-                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
+                'description' => "3×3のマトリクスで、図形の位置が規則的に移動しています。?に入る内容を選んでください。",
+                'pattern' => $matrixPattern,
+                'options' => [
+                    'A' => '左に▲',
+                    'B' => '中央に▲',
+                    'C' => '右に▲',
+                    'D' => '▲がない'
+                ],
                 'correct' => 'B',
             ];
         }
 
-        // パターン3: 色や濃淡が変わるパターン (10問)
-        for ($i = 1; $i <= 10; $i++) {
+        // パターン3: 加算・減算パターン (10問)
+        for ($i = 0; $i < 10; $i++) {
+            $symbol = ['●', '■', '▲', '◆', '★'][$i % 5];
+
+            $matrixPattern = "
+【3×3マトリクス - 加算規則】
+1行目: {$symbol} | {$symbol}{$symbol} | {$symbol}{$symbol}{$symbol}
+2行目: {$symbol}{$symbol} | {$symbol}{$symbol}{$symbol} | {$symbol}{$symbol}{$symbol}{$symbol}
+3行目: {$symbol}{$symbol}{$symbol} | {$symbol}{$symbol}{$symbol}{$symbol} | ?
+            ";
             $questionPool[] = [
-                'description' => "図形の色や濃淡が段階的に変わる規則 (バリエーション{$i})",
-                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
+                'description' => "3×3のマトリクスで、行ごとに記号の数が+1ずつ増え、列ごとにも+1ずつ増えています。",
+                'pattern' => $matrixPattern,
+                'options' => [
+                    'A' => str_repeat($symbol, 3),
+                    'B' => str_repeat($symbol, 4),
+                    'C' => str_repeat($symbol, 5),
+                    'D' => str_repeat($symbol, 6)
+                ],
+                'correct' => 'C',
+            ];
+        }
+
+        // パターン4: 対称性と回転 (8問)
+        for ($i = 0; $i < 8; $i++) {
+            $matrixPattern = "
+【3×3マトリクス - 対称性】
+1行目: ● | ■ | ●
+2行目: ■ | ▲ | ■
+3行目: ● | ■ | ?
+            ";
+            $questionPool[] = [
+                'description' => "3×3のマトリクスが中心点に対して点対称になっています。?に入る図形は？",
+                'pattern' => $matrixPattern,
+                'options' => [
+                    'A' => '●',
+                    'B' => '■',
+                    'C' => '▲',
+                    'D' => '◆'
+                ],
+                'correct' => 'A',
+            ];
+        }
+
+        // パターン5: 複数図形の組み合わせ (7問)
+        for ($i = 0; $i < 7; $i++) {
+            $matrixPattern = "
+【3×3マトリクス - 組み合わせ】
+1行目: ●■ | ●▲ | ●◆
+2行目: ■● | ■▲ | ■◆
+3行目: ▲● | ▲■ | ?
+            ";
+            $questionPool[] = [
+                'description' => "3×3のマトリクスで、各セルに2つの図形があり、規則的に配置されています。",
+                'pattern' => $matrixPattern,
+                'options' => [
+                    'A' => '▲●',
+                    'B' => '▲◆',
+                    'C' => '◆▲',
+                    'D' => '●▲'
+                ],
                 'correct' => 'B',
             ];
         }
 
-        // パターン4: サイズが変わるパターン (10問)
-        for ($i = 1; $i <= 10; $i++) {
+        // パターン6: 欠損パターン (5問)
+        for ($i = 0; $i < 5; $i++) {
+            $matrixPattern = "
+【3×3マトリクス - 欠損規則】
+1行目: ●●● | ●●○ | ●○○
+2行目: ■■■ | ■■○ | ■○○
+3行目: ▲▲▲ | ▲▲○ | ?
+            ";
             $questionPool[] = [
-                'description' => "図形のサイズが段階的に変化する規則 (バリエーション{$i})",
-                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
-                'correct' => 'B',
-            ];
-        }
-
-        // パターン5: 位置が変わるパターン (10問)
-        for ($i = 1; $i <= 10; $i++) {
-            $questionPool[] = [
-                'description' => "図形の位置が移動する規則 (バリエーション{$i})",
-                'options' => ['A' => '選択肢A', 'B' => '選択肢B', 'C' => '選択肢C', 'D' => '選択肢D'],
-                'correct' => 'B',
+                'description' => "3×3のマトリクスで、右に行くほど図形が○（空白）に置き換わっています。",
+                'pattern' => $matrixPattern,
+                'options' => [
+                    'A' => '▲▲▲',
+                    'B' => '▲▲○',
+                    'C' => '▲○○',
+                    'D' => '○○○'
+                ],
+                'correct' => 'C',
             ];
         }
 
@@ -331,7 +430,7 @@ final class QuestionSeeder extends Seeder
                 'id' => (string) Str::uuid(),
                 'subtest_type' => 'D',
                 'sequence_number' => $index + 1,
-                'content' => "マトリクスの規則を見つけて、空欄に入る図形を選んでください。{$question['description']}",
+                'content' => "{$question['description']}\n\n{$question['pattern']}",
                 'question_type' => 'multiple_choice',
                 'correct_answer' => $question['correct'],
                 'options' => $question['options'],
@@ -462,9 +561,30 @@ final class QuestionSeeder extends Seeder
 
         for ($i = 0; $i < 36; $i++) {
             $targetSymbol = $symbols[$i % count($symbols)];
+            // ランダムに右側のグループを生成（5つの記号）
+            $rightGroup = [];
+            $hasTarget = ($i % 2 === 0); // 半分は含まれる、半分は含まれない
+
+            if ($hasTarget) {
+                // ターゲットを含める
+                $rightGroup[] = $targetSymbol;
+                // 残り4つをランダムに追加
+                $otherSymbols = array_values(array_diff($symbols, [$targetSymbol]));
+                shuffle($otherSymbols);
+                $rightGroup = array_merge($rightGroup, array_slice($otherSymbols, 0, 4));
+                shuffle($rightGroup);
+            } else {
+                // ターゲットを含めない
+                $otherSymbols = array_values(array_diff($symbols, [$targetSymbol]));
+                shuffle($otherSymbols);
+                $rightGroup = array_slice($otherSymbols, 0, 5);
+            }
+
             $questionPool[] = [
                 'target' => $targetSymbol,
-                'description' => "記号 {$targetSymbol} が右側のグループに含まれているか答えてください",
+                'rightGroup' => implode(' ', $rightGroup),
+                'correct' => $hasTarget ? '○' : '×',
+                'description' => "左側の記号【{$targetSymbol}】が、右側のグループ【" . implode(' ', $rightGroup) . "】に含まれていますか？",
             ];
         }
 
@@ -476,7 +596,7 @@ final class QuestionSeeder extends Seeder
                 'sequence_number' => $index + 1,
                 'content' => $question['description'],
                 'question_type' => 'time_based',
-                'correct_answer' => '○',
+                'correct_answer' => $question['correct'],
                 'options' => ['○' => 'はい', '×' => 'いいえ'],
                 'max_points' => 1,
                 'hint' => null,

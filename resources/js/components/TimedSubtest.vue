@@ -1,6 +1,23 @@
 <template>
   <div class="space-y-4">
 
+    <!-- 符号化問題の対応表を常に表示 -->
+    <div v-if="subtestType === 'H' && questions.length > 0 && questions[0].options"
+         class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-300 p-5 sticky top-0 z-10 shadow-lg">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-lg">📋</span>
+        <h3 class="text-sm font-bold text-indigo-900">対応表（この表を参照して回答してください）</h3>
+      </div>
+      <div class="grid grid-cols-5 gap-2">
+        <div v-for="(symbol, digit) in questions[0].options" :key="digit"
+             class="bg-white rounded-lg p-3 text-center border-2 border-indigo-200 shadow-sm">
+          <div class="text-lg font-bold text-gray-800">{{ digit }}</div>
+          <div class="text-xs text-gray-500 my-1">↓</div>
+          <div class="text-2xl font-bold text-indigo-600">{{ symbol }}</div>
+        </div>
+      </div>
+    </div>
+
     <!-- タイマーバー -->
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <div class="flex items-center justify-between mb-2">
@@ -23,6 +40,9 @@
         <p class="font-semibold mb-1">⏱️ タイマーを準備してください</p>
         <p>「開始」ボタンを押すと同時に、スマホのタイマーを <strong>{{ timeLimitSeconds }}秒</strong> にセットしてください。</p>
         <p class="mt-1">問題は一度に全て表示されます。迷ったら飛ばして次へ進んでください。</p>
+        <p v-if="subtestType === 'H'" class="mt-2 font-semibold text-indigo-800">
+          💡 上の対応表を見ながら、各数字に対応する記号（A〜J）を入力してください。
+        </p>
       </div>
       <button
         @click="startTimer"
@@ -69,13 +89,25 @@
                 </div>
               </template>
               <!-- Coding: 文字入力 -->
+              <template v-else-if="subtestType === 'H'">
+                <input
+                  :value="answers[q.id] || ''"
+                  @input="setAnswer(q.id, $event.target.value.toUpperCase())"
+                  type="text"
+                  maxlength="1"
+                  placeholder="A〜J"
+                  class="w-20 border-2 border-gray-300 rounded-lg p-2 text-center text-lg font-bold
+                         focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 uppercase"
+                >
+              </template>
+              <!-- その他の時間制限問題 -->
               <template v-else>
                 <input
                   :value="answers[q.id] || ''"
                   @input="setAnswer(q.id, $event.target.value.toUpperCase())"
                   type="text"
                   maxlength="1"
-                  placeholder="A〜I"
+                  placeholder="回答"
                   class="w-16 border border-gray-300 rounded-lg p-2 text-center text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400 uppercase"
                 >

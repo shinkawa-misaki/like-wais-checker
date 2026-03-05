@@ -7,13 +7,19 @@
       <p class="text-gray-800 font-medium whitespace-pre-line">{{ question.content }}</p>
     </div>
 
-    <div class="grid grid-cols-2 gap-2">
+    <!-- 選択肢がない場合のエラー表示 -->
+    <div v-if="!question.options || Object.keys(question.options).length === 0" class="bg-red-50 border border-red-200 rounded-xl p-4">
+      <p class="text-red-700 text-sm">⚠️ 選択肢が読み込まれませんでした。</p>
+      <p class="text-xs text-red-600 mt-1">問題データ: {{ JSON.stringify(question) }}</p>
+    </div>
+
+    <div v-else class="grid grid-cols-2 gap-2">
       <button
         v-for="(label, key) in question.options"
         :key="key"
         @click="select(key)"
+        class="p-3 rounded-xl border-2 transition-all text-left"
         :class="[
-          'py-3 px-4 rounded-xl border-2 text-left transition-all',
           selected === key
             ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
             : 'border-gray-200 text-gray-700 hover:border-gray-300 bg-white'
