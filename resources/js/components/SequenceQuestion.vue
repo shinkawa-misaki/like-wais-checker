@@ -1,16 +1,20 @@
 <template>
   <div class="space-y-4">
+    <!-- 問題文（数字を隠す） -->
     <div class="bg-white rounded-xl border border-gray-200 p-5">
       <div class="flex items-center gap-2 mb-3">
         <span class="text-xs font-semibold text-gray-400">問 {{ question.sequenceNumber }}</span>
       </div>
-      <p class="text-gray-800 font-medium whitespace-pre-line">{{ question.content }}</p>
+      <!-- 数字を記憶する前：問題文を表示 -->
+      <p v-if="!revealed" class="text-gray-800 font-medium whitespace-pre-line">{{ question.content }}</p>
+      <!-- 数字を記憶した後：問題文から数字を隠す -->
+      <p v-else class="text-gray-800 font-medium">数字を入力してください</p>
     </div>
 
-    <!-- 表示ボタン（数字を1秒ずつ表示するシミュレーション） -->
+    <!-- 表示ボタン（数字を記憶してから押す） -->
     <div v-if="!revealed" class="text-center">
       <p class="text-sm text-gray-500 mb-4">
-        問題文を読んで、数字を記憶してから「回答する」を押してください
+        上の数字を記憶してから「回答する」を押してください
       </p>
       <button
         @click="reveal"
@@ -20,6 +24,7 @@
       </button>
     </div>
 
+    <!-- 入力フィールド（回答するを押した後に表示） -->
     <template v-else>
       <input
         v-model="response"
@@ -40,7 +45,7 @@
         class="w-full py-3 bg-blue-600 text-white rounded-xl font-medium
                hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        回答する（やり直し不可）
+        確定して次へ
       </button>
     </template>
   </div>
