@@ -67,7 +67,6 @@ function confirm() {
     emit('answered', {
         question_id: props.question.id,
         response: response.value.replace(/\s/g, ''),
-        awarded_score: null,
     });
     response.value = '';
     revealed.value = false;
