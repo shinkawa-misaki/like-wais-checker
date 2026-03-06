@@ -38,5 +38,5 @@ RUN composer dump-autoload --optimize
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-EXPOSE 9000
+RUN php artisan serve --host=0.0.0.0 --port=9000
 CMD ["php-fpm"]
