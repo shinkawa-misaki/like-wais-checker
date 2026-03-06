@@ -2,6 +2,7 @@ services:
 
   # ─── PHP-FPM アプリケーション ───────────────────────────────────
   app:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: docker/app/Dockerfile
