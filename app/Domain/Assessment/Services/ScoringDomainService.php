@@ -91,10 +91,10 @@ final class ScoringDomainService
      * 類似問題の採点
      *
      * hint / correct_answer のキーワードとの部分一致で概念マッチを判定し、
-     * 日本語の文法構造（助詞・文末表現）で単語レベル vs 文章レベルを判定する。
+     * hint テキストとの文字列類似度で2点 vs 1点を判定する。
      *
-     * - 2点: キーワードにマッチ かつ 助詞・文末表現を含む（文章レベル）
-     * - 1点: キーワードにマッチ かつ 単語・短いフレーズ（単語レベル）
+     * - 2点: キーワードにマッチ かつ hint との類似度が閾値以上
+     * - 1点: キーワードにマッチ かつ hint との類似度が閾値未満
      * - 0点: キーワードにマッチしない
      */
     private function gradeSimilarityAnswer(Question $question, string $response): Score
@@ -103,9 +103,27 @@ final class ScoringDomainService
             return Score::zero();
         }
 
-        return $this->isSentenceLevel($response)
+        return $this->isSimilarToHint($question, $response)
             ? new Score(2.0)
             : new Score(1.0);
+    }
+
+    /**
+     * 回答が hint テキストと十分に類似しているか判定する
+     *
+     * similar_text() で文字列の共通部分を計算し、
+     * hint + response の合計長に対する割合が閾値（40%）以上なら類似とみなす。
+     */
+    private function isSimilarToHint(Question $question, string $response): bool
+    {
+        $hint = $question->getHint();
+        if ($hint === null || $hint === '') {
+            return false;
+        }
+
+        similar_text($hint, $response, $percent);
+
+        return $percent >= 40.0;
     }
 
     /**
