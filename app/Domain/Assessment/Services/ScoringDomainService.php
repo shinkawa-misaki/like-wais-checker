@@ -56,107 +56,33 @@ final class ScoringDomainService
             return Score::zero();
         }
 
-        if ($this->isSimilarityQuestion($question)) {
-            return $this->gradeSimilarityAnswer($question, $response);
-        }
-
-        if ($this->isVocabularyQuestion($question)) {
-            return $this->gradeVocabularyAnswer($question, $response);
-        }
-
-        return $this->gradeByLength(mb_strlen($response));
+        // 類似・語彙問題も選択式と同じ厳密な一致判定を使用
+        return $this->gradeExact($question, $answer);
     }
 
     /**
-     * 類似問題かどうかを判定
-     */
-    private function isSimilarityQuestion(Question $question): bool
-    {
-        $content = $question->getContent();
-        return str_contains($content, '共通点');
-    }
-
-    /**
-     * 語彙問題かどうかを判定
-     */
-    private function isVocabularyQuestion(Question $question): bool
-    {
-        $content = $question->getContent();
-        return str_contains($content, 'どういう意味')
-            || str_contains($content, '意味を説明')
-            || str_contains($content, '言葉の意味');
-    }
-
-    /**
-     * 類似問題の採点
+     * テキストを単語に切り取る
      *
-     * hint / correct_answer のキーワードとの部分一致で概念マッチを判定し、
-     * hint テキストとの文字列類似度で2点 vs 1点を判定する。
-     *
-     * - 2点: キーワードにマッチ かつ hint との類似度が閾値以上
-     * - 1点: キーワードにマッチ かつ hint との類似度が閾値未満
-     * - 0点以上: キーワードにマッチしない場合は文字数ベースにフォールバック
+     * @return array<string>
      */
-    private function gradeSimilarityAnswer(Question $question, string $response): Score
+    private function extractWords(string $text): array
     {
-        if (!$this->matchesHintConcept($question, $response)) {
-            return $this->gradeByFreeTextLength(mb_strlen($response));
-        }
+        // 助詞や区切り文字で分割
+        $parts = preg_split('/[・、。／\/\s　のやとをにへがはで]+/u', $text) ?: [];
+        $words = [];
 
-        return $this->isSimilarToHint($question, $response)
-            ? new Score(2.0)
-            : new Score(1.0);
-    }
-
-    /**
-     * 回答が hint テキストと十分に類似しているか判定する
-     *
-     * similar_text() で文字列の共通部分を計算し、類似とみなす閾値を判定する。
-     * 短い回答（≤3文字）は精密な概念語の可能性が高いため閾値を低く設定する。
-     */
-    private function isSimilarToHint(Question $question, string $response): bool
-    {
-        $hint = $question->getHint();
-        if ($hint === null || $hint === '') {
-            return false;
-        }
-
-        similar_text($hint, $response, $percent);
-
-        // 短い精確な概念語（≤3文字）は低い閾値で判定
-        $threshold = mb_strlen($response) <= 3 ? 10.0 : 40.0;
-
-        return $percent >= $threshold;
-    }
-
-    /**
-     * hint / correct_answer から抽出したキーワードと部分一致するか判定
-     * 双方向チェック: response→kw / kw→response
-     * 短い概念語（≥2文字）は文字レベルの共通部分でもマッチとみなす
-     */
-    private function matchesHintConcept(Question $question, string $response): bool
-    {
-        foreach ($this->extractConceptKeywords($question) as $kw) {
-            if (str_contains($response, $kw) || str_contains($kw, $response)) {
-                return true;
-            }
-
-            // 短い概念語（≥2文字）: キーワードと共通する文字があればマッチ
-            // 例: 「果物」と「食べ物」は「物」を共有 → 関連概念として認識
-            if (mb_strlen($response) >= 2) {
-                $responseChars = preg_split('//u', $response, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-                $kwChars       = preg_split('//u', $kw,       -1, PREG_SPLIT_NO_EMPTY) ?: [];
-                if (!empty(array_intersect($responseChars, $kwChars))) {
-                    return true;
-                }
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if ($part !== '') {
+                $words[] = $part;
             }
         }
 
-        return false;
+        return $words;
     }
 
     /**
-     * hint と correct_answer を助詞・区切り文字で分割してキーワード配列を返す
+     * hint / correct_answer を助詞・区切り文字で分割してキーワード配列を返す
      *
      * @return array<string>
      */
@@ -182,56 +108,6 @@ final class ScoringDomainService
         return array_unique($keywords);
     }
 
-    /**
-     * 語彙問題の採点
-     *
-     * 類似問題と同じ方針:
-     * - 2点: hint のキーワードにマッチ かつ hint との類似度が閾値以上
-     * - 1点: hint のキーワードにマッチ かつ hint との類似度が閾値未満
-     * - 0点以上: キーワードにマッチしない場合は文字数ベースにフォールバック
-     */
-    private function gradeVocabularyAnswer(Question $question, string $response): Score
-    {
-        if (!$this->matchesHintConcept($question, $response)) {
-            return $this->gradeByFreeTextLength(mb_strlen($response));
-        }
-
-        return $this->isSimilarToHint($question, $response)
-            ? new Score(2.0)
-            : new Score(1.0);
-    }
-
-    /**
-     * 自由記述（類似・語彙）用の文字数ベース採点
-     *
-     * キーワードマッチがない場合のフォールバック。
-     * - 2点: 14文字以上（詳細な説明）
-     * - 1点: 8文字以上（ある程度の説明）
-     * - 0点: 8文字未満
-     */
-    private function gradeByFreeTextLength(int $length): Score
-    {
-        if ($length >= 14) {
-            return new Score(2.0);
-        }
-        if ($length >= 8) {
-            return new Score(1.0);
-        }
-        return Score::zero();
-    }
-
-    /**
-     * 長さベースの採点（非自由記述フォールバック用）
-     */
-    private function gradeByLength(int $length): Score
-    {
-        if ($length >= 30) {
-            return new Score(2.0);
-        } else if ($length >= 15) {
-            return new Score(1.0);
-        }
-        return Score::zero();
-    }
 
     /**
      * Calculate symbol search subtest score: correct - (wrong * 0.5), min 0.

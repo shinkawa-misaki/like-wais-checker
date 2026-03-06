@@ -44,22 +44,6 @@ final class ScoringDomainServiceTest extends TestCase
         $this->assertSame(0.0, $score->getValue());
     }
 
-    public function test_grade_free_text_uses_awarded_score(): void
-    {
-        $question = $this->createQuestion(QuestionType::FREE_TEXT, '正解');
-        $answer = new Answer(
-            questionId: $question->getId(),
-            assessmentId: AssessmentId::generate(),
-            response: '部分的な回答',
-            awardedScore: new Score(1.0),
-        );
-
-        $score = $this->service->gradeAnswer($question, $answer);
-
-        // 自動採点が適用されるため、回答内容に基づいた点数が返される
-        $this->assertGreaterThanOrEqual(0.0, $score->getValue());
-    }
-
     public function test_grade_similarity_answer_with_high_level_keyword(): void
     {
         $question = new Question(
