@@ -34,16 +34,9 @@
       </div>
     </div>
 
+
     <!-- 前段階：タイマー開始前 -->
-    <div v-if="!started" class="space-y-4">
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-        <p class="font-semibold mb-1">⏱️ タイマーを準備してください</p>
-        <p>「開始」ボタンを押すと同時に、スマホのタイマーを <strong>{{ timeLimitSeconds }}秒</strong> にセットしてください。</p>
-        <p class="mt-1">問題は一度に全て表示されます。迷ったら飛ばして次へ進んでください。</p>
-        <p v-if="subtestType === 'H'" class="mt-2 font-semibold text-indigo-800">
-          💡 上の対応表を見ながら、各数字に対応する記号（A〜J）を入力してください。
-        </p>
-      </div>
+    <div v-if="!started">
       <button
         @click="startTimer"
         class="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-lg

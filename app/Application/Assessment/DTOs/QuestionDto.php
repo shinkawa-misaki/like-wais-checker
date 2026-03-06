@@ -20,6 +20,7 @@ final class QuestionDto
         public readonly string $questionType,
         public readonly ?array $options,
         public readonly int $maxPoints,
+        public readonly ?string $correctAnswer,
         public readonly ?string $hint,
     ) {
     }
@@ -35,6 +36,7 @@ final class QuestionDto
             questionType: $question->getQuestionType()->value,
             options: $question->getOptions(),
             maxPoints: $question->getMaxPoints(),
+            correctAnswer: $question->getCorrectAnswer(),
             hint: $question->getHint(),
         );
     }

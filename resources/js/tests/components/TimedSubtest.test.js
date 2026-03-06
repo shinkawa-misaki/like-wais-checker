@@ -22,11 +22,10 @@ describe('TimedSubtest', () => {
 
     // ─── 開始前 ──────────────────────────────────────────────────
 
-    it('開始前はタイマーとスタートボタンが表示される', () => {
+    it('開始前はスタートボタンが表示される', () => {
         const wrapper = mount(TimedSubtest, {
             props: { questions: makeQuestions(), timeLimitSeconds: 60, subtestType: 'G' },
         });
-        expect(wrapper.text()).toContain('タイマーを準備してください');
         expect(wrapper.text()).toContain('タイマー開始');
     });
 
@@ -35,13 +34,6 @@ describe('TimedSubtest', () => {
             props: { questions: makeQuestions(), timeLimitSeconds: 60, subtestType: 'G' },
         });
         expect(wrapper.text()).toContain('01:00');
-    });
-
-    it('制限時間が秒表示される（45秒）', () => {
-        const wrapper = mount(TimedSubtest, {
-            props: { questions: makeQuestions(), timeLimitSeconds: 45, subtestType: 'G' },
-        });
-        expect(wrapper.text()).toContain('45秒');
     });
 
     // ─── タイマー開始 ────────────────────────────────────────────

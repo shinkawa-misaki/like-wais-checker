@@ -33,10 +33,10 @@ describe('DisclaimerView', () => {
         expect(wrapper.text()).toContain('WAIS');
     });
 
-    it('5つのチェックボックスが表示される', () => {
+    it('4つのチェックボックスが表示される', () => {
         const { wrapper } = makeWrapper();
         const checkboxes = wrapper.findAll('input[type="checkbox"]');
-        expect(checkboxes).toHaveLength(5);
+        expect(checkboxes).toHaveLength(4);
     });
 
     it('全チェックなしでは「同意して開始する」ボタンが disabled', () => {
@@ -58,8 +58,8 @@ describe('DisclaimerView', () => {
     it('1つでもチェック漏れがあるとボタンは disabled のまま', async () => {
         const { wrapper } = makeWrapper();
         const checkboxes = wrapper.findAll('input[type="checkbox"]');
-        // 4つだけチェック
-        for (let i = 0; i < 4; i++) {
+        // 3つだけチェック
+        for (let i = 0; i < 3; i++) {
             await checkboxes[i].setValue(true);
         }
         const btn = wrapper.findAll('button').find(b => b.text().includes('同意して開始する'));

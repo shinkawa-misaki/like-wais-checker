@@ -53,7 +53,7 @@ describe('FreeTextQuestion', () => {
         const wrapper = mount(FreeTextQuestion, { props: { question: baseQuestion } });
         await wrapper.find('textarea').setValue('どちらも哺乳動物です');
         await wrapper.find('button').trigger('click');
-        expect(wrapper.text()).toContain('採点基準');
+        expect(wrapper.text()).toContain('この回答に点数をつけてください');
         expect(wrapper.text()).toContain(baseQuestion.hint);
     });
 
@@ -88,10 +88,10 @@ describe('FreeTextQuestion', () => {
         await wrapper.find('textarea').setValue('どちらも哺乳動物です');
         await wrapper.find('button').trigger('click');
 
-        // 2点ボタンをクリック
-        const scoreButtons = wrapper.findAll('button').filter(b => b.text().includes('点'));
-        const btn2 = scoreButtons.find(b => b.text().includes('2点'));
-        await btn2.trigger('click');
+        // 2点のラジオボタンをクリック
+        const radioButtons = wrapper.findAll('input[type="radio"]');
+        const radio2 = radioButtons.find(r => r.attributes('value') === '2');
+        await radio2.setValue(true);
 
         // 確定
         const confirmBtn = wrapper.findAll('button').find(b => b.text().includes('確定して次へ'));
@@ -110,9 +110,9 @@ describe('FreeTextQuestion', () => {
         await wrapper.find('textarea').setValue('大きい動物');
         await wrapper.find('button').trigger('click');
 
-        const scoreButtons = wrapper.findAll('button').filter(b => b.text().includes('点'));
-        const btn0 = scoreButtons.find(b => b.text().includes('0点'));
-        await btn0.trigger('click');
+        const radioButtons = wrapper.findAll('input[type="radio"]');
+        const radio0 = radioButtons.find(r => r.attributes('value') === '0');
+        await radio0.setValue(true);
 
         const confirmBtn = wrapper.findAll('button').find(b => b.text().includes('確定して次へ'));
         await confirmBtn.trigger('click');
@@ -126,8 +126,10 @@ describe('FreeTextQuestion', () => {
         await wrapper.find('textarea').setValue('回答1');
         await wrapper.find('button').trigger('click');
 
-        const scoreButtons = wrapper.findAll('button').filter(b => b.text().includes('点'));
-        await scoreButtons.find(b => b.text().includes('1点')).trigger('click');
+        const radioButtons = wrapper.findAll('input[type="radio"]');
+        const radio1 = radioButtons.find(r => r.attributes('value') === '1');
+        await radio1.setValue(true);
+
         const confirmBtn = wrapper.findAll('button').find(b => b.text().includes('確定して次へ'));
         await confirmBtn.trigger('click');
 
