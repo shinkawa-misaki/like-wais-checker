@@ -169,88 +169,22 @@ final class ScoringDomainService
     }
 
     /**
-     * 回答が文章レベルかどうかを判定（助詞・文末表現の有無）
-     */
-    private function isSentenceLevel(string $response): bool
-    {
-        return (bool) preg_match(
-            '/[はがをにでもへとやのな]|です|ます|である|している|のこと|という|ような/',
-            $response
-        );
-    }
-
-    /**
      * 語彙問題の採点
      *
-     * 採点方針（寛容寄り）:
-     * - correct_answer との3文字以上の共通部分文字列があれば 2点（長さ>=8）or 1点
-     * - ・区切りキーワードが1つ以上マッチすれば 2点（長さ>=8）or 1点
-     * - 8文字以上書いていれば 1点
-     * - それ以外は 0点
+     * 類似問題と同じ方針:
+     * - 2点: hint のキーワードにマッチ かつ hint との類似度が閾値以上
+     * - 1点: hint のキーワードにマッチ かつ hint との類似度が閾値未満
+     * - 0点: hint のキーワードにマッチしない
      */
     private function gradeVocabularyAnswer(Question $question, string $response): Score
     {
-        $length     = mb_strlen($response);
-        $correct    = $question->getCorrectAnswer();
-
-        // ① correct_answer との共通部分文字列チェック（3文字以上）
-        if ($correct !== null && $this->hasCommonSubstring($response, $correct, 3)) {
-            return new Score($length >= 8 ? 2.0 : 1.0);
+        if (!$this->matchesHintConcept($question, $response)) {
+            return Score::zero();
         }
 
-        // ② ・区切りキーワードが存在する場合（類似問題の correct_answer 形式）
-        $keywords = $this->extractKeywords($correct ?? '');
-        if (count($keywords) >= 2) {
-            foreach ($keywords as $kw) {
-                if (str_contains($response, $kw)) {
-                    return new Score($length >= 8 ? 2.0 : 1.0);
-                }
-            }
-        }
-
-        // ③ 8文字以上書いていれば 1点
-        if ($length >= 8) {
-            return new Score(1.0);
-        }
-
-        return Score::zero();
-    }
-
-    /**
-     * correct_answer 文字列からキーワードを抽出する
-     * 区切り文字：「・」「、」「。」「／」「/」半角スペース
-     *
-     * @return array<string>
-     */
-    private function extractKeywords(string $text): array
-    {
-        $parts = preg_split('/[・、。／\/\s]+/u', $text) ?: [];
-
-        return array_values(array_filter(
-            array_map('trim', $parts),
-            fn (string $kw) => mb_strlen($kw) >= 2
-        ));
-    }
-
-    /**
-     * 文字列 $haystack に $needle の minLen 文字以上の共通部分文字列があるか判定
-     */
-    private function hasCommonSubstring(string $haystack, string $needle, int $minLen): bool
-    {
-        $haystackLen = mb_strlen($haystack);
-
-        if ($haystackLen < $minLen) {
-            return false;
-        }
-
-        for ($i = 0; $i <= $haystackLen - $minLen; $i++) {
-            $sub = mb_substr($haystack, $i, $minLen);
-            if (str_contains($needle, $sub)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->isSimilarToHint($question, $response)
+            ? new Score(2.0)
+            : new Score(1.0);
     }
 
     /**
