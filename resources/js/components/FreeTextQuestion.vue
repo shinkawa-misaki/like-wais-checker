@@ -40,9 +40,9 @@
       </div>
 
       <!-- 模範解答表示 -->
-      <div v-if="question.correctAnswer || question.correct_answer || question.hint" class="bg-green-50 rounded-xl border border-green-200 p-4 mt-3">
+      <div v-if="hasCorrectAnswerOrHint" class="bg-green-50 rounded-xl border border-green-200 p-4 mt-3">
         <p class="text-xs text-green-600 font-semibold mb-2">✓ 模範解答</p>
-        <p class="text-sm text-green-800">{{ question.correctAnswer || question.correct_answer || question.hint }}</p>
+        <p class="text-sm text-green-800 whitespace-pre-line">{{ correctAnswerText }}</p>
       </div>
 
       <!-- 採点UI -->
@@ -139,4 +139,12 @@ function getScoreLabel(score) {
         default: return '';
     }
 }
+
+const hasCorrectAnswerOrHint = computed(() => {
+    return props.question.correctAnswer || props.question.correct_answer || props.question.hint;
+});
+
+const correctAnswerText = computed(() => {
+    return props.question.correctAnswer || props.question.correct_answer || props.question.hint;
+});
 </script>
