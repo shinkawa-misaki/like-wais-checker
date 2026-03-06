@@ -35,8 +35,19 @@
     </div>
 
 
+    <!-- 前段階：タイマー開始前 -->
+    <div v-if="!started">
+      <button
+        @click="startTimer"
+        class="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-lg
+               hover:bg-red-700 transition-colors shadow-md"
+      >
+        タイマー開始 & 回答を開始する
+      </button>
+    </div>
+
     <!-- 問題一覧（タイマー稼働中） -->
-    <template v-if="!finished">
+    <template v-else-if="!finished">
       <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
         <div
           v-for="(q, i) in questions"
@@ -127,7 +138,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 
 const props = defineProps({
     questions: { type: Array, required: true },
@@ -137,6 +148,7 @@ const props = defineProps({
 
 const emit = defineEmits(['submitted']);
 
+const started = ref(false);
 const finished = ref(false);
 const remainingSeconds = ref(props.timeLimitSeconds);
 const answers = ref({});
@@ -173,6 +185,7 @@ function setAnswer(questionId, value) {
 }
 
 function startTimer() {
+    started.value = true;
     timer = setInterval(() => {
         remainingSeconds.value--;
         elapsedSeconds.value++;
@@ -192,10 +205,6 @@ function submitAll() {
     }));
     emit('submitted', { answers: result, elapsedSeconds: elapsedSeconds.value });
 }
-
-onMounted(() => {
-    startTimer();
-});
 
 onUnmounted(() => {
     if (timer) clearInterval(timer);
