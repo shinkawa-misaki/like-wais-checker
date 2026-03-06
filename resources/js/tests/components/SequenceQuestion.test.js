@@ -36,7 +36,7 @@ describe('SequenceQuestion', () => {
     it('入力前は提出ボタンが disabled', async () => {
         const wrapper = mount(SequenceQuestion, { props: { question: baseQuestion } });
         await wrapper.find('button').trigger('click');
-        const submitBtn = wrapper.findAll('button').find(b => b.text().includes('回答する'));
+        const submitBtn = wrapper.findAll('button').find(b => b.text().includes('確定して次へ'));
         expect(submitBtn.attributes('disabled')).toBeDefined();
     });
 
@@ -44,7 +44,7 @@ describe('SequenceQuestion', () => {
         const wrapper = mount(SequenceQuestion, { props: { question: baseQuestion } });
         await wrapper.find('button').trigger('click');
         await wrapper.find('input').setValue('3719');
-        const submitBtn = wrapper.findAll('button').find(b => b.text().includes('回答する'));
+        const submitBtn = wrapper.findAll('button').find(b => b.text().includes('確定して次へ'));
         expect(submitBtn.attributes('disabled')).toBeUndefined();
     });
 
@@ -52,13 +52,12 @@ describe('SequenceQuestion', () => {
         const wrapper = mount(SequenceQuestion, { props: { question: baseQuestion } });
         await wrapper.find('button').trigger('click');
         await wrapper.find('input').setValue('3719');
-        const submitBtn = wrapper.findAll('button').find(b => b.text().includes('回答する'));
+        const submitBtn = wrapper.findAll('button').find(b => b.text().includes('確定して次へ'));
         await submitBtn.trigger('click');
         expect(wrapper.emitted('answered')).toHaveLength(1);
         expect(wrapper.emitted('answered')[0][0]).toEqual({
             question_id: 5,
             response: '3719',
-            awarded_score: null,
         });
     });
 
@@ -66,7 +65,7 @@ describe('SequenceQuestion', () => {
         const wrapper = mount(SequenceQuestion, { props: { question: baseQuestion } });
         await wrapper.find('button').trigger('click');
         await wrapper.find('input').setValue('3 7 1 9');
-        const submitBtn = wrapper.findAll('button').find(b => b.text().includes('回答する'));
+        const submitBtn = wrapper.findAll('button').find(b => b.text().includes('確定して次へ'));
         await submitBtn.trigger('click');
         expect(wrapper.emitted('answered')[0][0].response).toBe('3719');
     });
@@ -84,7 +83,7 @@ describe('SequenceQuestion', () => {
         const wrapper = mount(SequenceQuestion, { props: { question: baseQuestion } });
         await wrapper.find('button').trigger('click');
         await wrapper.find('input').setValue('3719');
-        await wrapper.findAll('button').find(b => b.text().includes('回答する')).trigger('click');
+        await wrapper.findAll('button').find(b => b.text().includes('確定して次へ')).trigger('click');
         // 初期状態に戻る
         expect(wrapper.find('input').exists()).toBe(false);
     });

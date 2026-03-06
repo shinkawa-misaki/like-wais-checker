@@ -12,7 +12,6 @@ use App\Domain\Assessment\ValueObjects\SubtestType;
 
 final class ScoringDomainService
 {
-
     /**
      * Grade a single answer against its question.
      * For FREE_TEXT questions, auto-grading is applied based on content analysis.
@@ -37,7 +36,12 @@ final class ScoringDomainService
             return Score::zero();
         }
 
-        $isCorrect = strtolower($response) === strtolower(trim($question->getCorrectAnswer()));
+        $correctAnswer = $question->getCorrectAnswer();
+        if ($correctAnswer === null) {
+            return Score::zero();
+        }
+
+        $isCorrect = strtolower($response) === strtolower(trim($correctAnswer));
 
         return $isCorrect ? new Score(1.0) : Score::zero();
     }
@@ -59,55 +63,6 @@ final class ScoringDomainService
         // 類似・語彙問題も選択式と同じ厳密な一致判定を使用
         return $this->gradeExact($question, $answer);
     }
-
-    /**
-     * テキストを単語に切り取る
-     *
-     * @return array<string>
-     */
-    private function extractWords(string $text): array
-    {
-        // 助詞や区切り文字で分割
-        $parts = preg_split('/[・、。／\/\s　のやとをにへがはで]+/u', $text) ?: [];
-        $words = [];
-
-        foreach ($parts as $part) {
-            $part = trim($part);
-            if ($part !== '') {
-                $words[] = $part;
-            }
-        }
-
-        return $words;
-    }
-
-    /**
-     * hint / correct_answer を助詞・区切り文字で分割してキーワード配列を返す
-     *
-     * @return array<string>
-     */
-    private function extractConceptKeywords(Question $question): array
-    {
-        $sources = array_filter([
-            $question->getHint(),
-            $question->getCorrectAnswer(),
-        ]);
-
-        $keywords = [];
-
-        foreach ($sources as $source) {
-            $parts = preg_split('/[・、。／\/\s　のやとをにへ]+/u', $source) ?: [];
-            foreach ($parts as $part) {
-                $part = trim($part);
-                if (mb_strlen($part) >= 2) {
-                    $keywords[] = $part;
-                }
-            }
-        }
-
-        return array_unique($keywords);
-    }
-
 
     /**
      * Calculate symbol search subtest score: correct - (wrong * 0.5), min 0.
@@ -138,7 +93,12 @@ final class ScoringDomainService
                 continue;
             }
 
-            $isCorrect = strtolower($response) === strtolower(trim($question->getCorrectAnswer()));
+            $correctAnswer = $question->getCorrectAnswer();
+            if ($correctAnswer === null) {
+                continue;
+            }
+
+            $isCorrect = strtolower($response) === strtolower(trim($correctAnswer));
 
             if ($isCorrect) {
                 $correct++;
@@ -236,11 +196,21 @@ final class ScoringDomainService
 
         // パーセンタイルを標準正規分布のz-scoreに変換
         // 16% ≈ -1SD, 50% = 0SD, 84% ≈ +1SD
-        if ($percentile <= 0.02) return -3.0;
-        if ($percentile <= 0.16) return -1.0 + ($percentile - 0.02) / 0.14 * (-2.0);
-        if ($percentile <= 0.50) return -1.0 + ($percentile - 0.16) / 0.34;
-        if ($percentile <= 0.84) return 0.0 + ($percentile - 0.50) / 0.34;
-        if ($percentile <= 0.98) return 1.0 + ($percentile - 0.84) / 0.14 * 2.0;
+        if ($percentile <= 0.02) {
+            return -3.0;
+        }
+        if ($percentile <= 0.16) {
+            return -1.0 + ($percentile - 0.02) / 0.14 * (-2.0);
+        }
+        if ($percentile <= 0.50) {
+            return -1.0 + ($percentile - 0.16) / 0.34;
+        }
+        if ($percentile <= 0.84) {
+            return 0.0 + ($percentile - 0.50) / 0.34;
+        }
+        if ($percentile <= 0.98) {
+            return 1.0 + ($percentile - 0.84) / 0.14 * 2.0;
+        }
         return 3.0;
     }
 

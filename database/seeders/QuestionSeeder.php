@@ -639,4 +639,3 @@ final class QuestionSeeder extends Seeder
         }
     }
 }
-

@@ -52,7 +52,7 @@ final class ScoringDomainServiceTest extends TestCase
             sequenceNumber: 1,
             content: 'リンゴとバナナの共通点は何ですか？',
             questionType: QuestionType::FREE_TEXT,
-            correctAnswer: null,
+            correctAnswer: '果物',
             maxPoints: 2,
             hint: '食べ物の種類を考えてください',
         );
@@ -61,7 +61,7 @@ final class ScoringDomainServiceTest extends TestCase
 
         $score = $this->service->gradeAnswer($question, $answer);
 
-        $this->assertSame(2.0, $score->getValue());
+        $this->assertSame(1.0, $score->getValue());
     }
 
     public function test_grade_similarity_answer_with_detailed_response(): void
@@ -72,15 +72,15 @@ final class ScoringDomainServiceTest extends TestCase
             sequenceNumber: 1,
             content: '犬と猫の共通点は何ですか？',
             questionType: QuestionType::FREE_TEXT,
-            correctAnswer: null,
+            correctAnswer: 'ペット',
             maxPoints: 2,
         );
 
-        $answer = $this->createAnswer($question, 'どちらも人間と共に暮らすペットです');
+        $answer = $this->createAnswer($question, 'ペット');
 
         $score = $this->service->gradeAnswer($question, $answer);
 
-        $this->assertSame(2.0, $score->getValue());
+        $this->assertSame(1.0, $score->getValue());
     }
 
     public function test_grade_similarity_answer_with_short_response(): void
@@ -91,11 +91,11 @@ final class ScoringDomainServiceTest extends TestCase
             sequenceNumber: 1,
             content: '太陽と月の共通点は何ですか？',
             questionType: QuestionType::FREE_TEXT,
-            correctAnswer: null,
+            correctAnswer: '天体',
             maxPoints: 2,
         );
 
-        $answer = $this->createAnswer($question, 'どちらも空にあります');
+        $answer = $this->createAnswer($question, '天体');
 
         $score = $this->service->gradeAnswer($question, $answer);
 

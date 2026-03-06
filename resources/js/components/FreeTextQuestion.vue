@@ -124,6 +124,11 @@ function submitGrading() {
         response: response.value.trim(),
         awarded_score: selectedScore.value,
     });
+
+    // フォームをリセット
+    response.value = '';
+    hasAnswered.value = false;
+    selectedScore.value = null;
 }
 
 function getScoreLabel(score) {

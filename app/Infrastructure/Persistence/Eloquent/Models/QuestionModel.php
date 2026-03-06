@@ -31,4 +31,3 @@ final class QuestionModel extends Model
         'sequence_number' => 'integer',
     ];
 }
-
