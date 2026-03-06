@@ -39,7 +39,7 @@
         </div>
         <div class="flex items-center gap-2">
           <span>📵</span>
-          <span>検索・電卓禁止（タイマーはOK）</span>
+          <span>検索・電卓禁止</span>
         </div>
       </div>
 

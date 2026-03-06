@@ -92,6 +92,13 @@ final class AssessmentController extends Controller
             return response()->json(['error' => $e->getMessage()], 422);
         } catch (\ValueError $e) {
             return response()->json(['error' => "Invalid subtest type: {$subtestType}"], 422);
+        } catch (\Throwable $e) {
+            \Log::error('submitAnswers error', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+            return response()->json(['error' => '採点処理中にエラーが発生しました: ' . $e->getMessage()], 500);
         }
     }
 

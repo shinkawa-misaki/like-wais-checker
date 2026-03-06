@@ -79,11 +79,6 @@ describe('DisclaimerView', () => {
         expect(store.startAssessment).toHaveBeenCalledOnce();
     });
 
-    it('VCI自由記述の注意書きが表示される', () => {
-        const { wrapper } = makeWrapper();
-        expect(wrapper.text()).toContain('自己採点');
-    });
-
     it('「戻る」ボタンが表示される', () => {
         const { wrapper } = makeWrapper();
         expect(wrapper.text()).toContain('戻る');

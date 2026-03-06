@@ -25,7 +25,7 @@
           </li>
           <li class="flex gap-2">
             <span class="text-amber-500 shrink-0">•</span>
-            <span><strong>検索・辞書・電卓は禁止</strong>（タイマーだけOK）。</span>
+            <span><strong>検索・辞書・電卓は禁止</strong>。</span>
           </li>
         </ul>
       </div>
@@ -47,12 +47,6 @@
             <span class="text-sm text-gray-700">{{ item.label }}</span>
           </label>
         </div>
-      </div>
-
-      <!-- VCI（自由記述）の採点について -->
-      <div class="bg-blue-50 rounded-xl p-4 text-sm text-blue-800">
-        <p class="font-semibold mb-1">📝 VCI（言語理解）について</p>
-        <p>類似・語彙問題は自由記述です。回答後に採点基準が表示されるので、<strong>自己採点（0〜2点）</strong>を入力してください。</p>
       </div>
 
       <!-- ボタン -->
@@ -87,7 +81,6 @@ const loading = ref(false);
 
 const checklist = ref([
     { id: 'quiet', label: '静かな場所にいる', checked: false },
-    { id: 'timer', label: 'タイマー（スマホ等）を手元に用意した', checked: false },
     { id: 'nodic', label: '検索・辞書・電卓を使わないことに同意する', checked: false },
     { id: 'health', label: '体調は問題ない（睡眠・疲労など）', checked: false },
     { id: 'time', label: '30〜40分の時間を確保した', checked: false },

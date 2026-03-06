@@ -56,7 +56,7 @@
             </div>
             <div v-if="meta?.timeLimitSeconds" class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-800">
               <strong>⏱️ 時間制限：{{ meta.timeLimitSeconds }}秒</strong>
-              <br>タイマーを準備してから開始ボタンを押してください。
+              <br>開始ボタンを押してください。
             </div>
             <div class="flex gap-2 text-sm text-gray-500">
               <span>問題数：{{ questions.length }}問</span>

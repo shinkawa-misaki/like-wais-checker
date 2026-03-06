@@ -12,6 +12,7 @@ use App\Domain\Assessment\ValueObjects\SubtestType;
 
 final class ScoringDomainService
 {
+
     /**
      * Grade a single answer against its question.
      * For FREE_TEXT questions, auto-grading is applied based on content analysis.
@@ -43,41 +44,27 @@ final class ScoringDomainService
 
     /**
      * 自由記述問題の自動採点（類似・語彙問題用）
-     * 0点: 空または極端に短い回答
-     * 1点: 基本的な回答はあるが不十分
-     * 2点: 適切で十分な回答
+     * 0点: 空または全く見当違いの回答
+     * 1点: 方向性が合っている
+     * 2点: キーワードや概念が含まれている
      */
     private function gradeFreeText(Question $question, Answer $answer): Score
     {
         $response = trim($answer->getResponse());
 
-        // 空の回答は0点
         if ($response === '') {
             return Score::zero();
         }
 
-        // 類似問題のキーワード評価（長さチェックの前に実施）
         if ($this->isSimilarityQuestion($question)) {
-            return $this->gradeSimilarityAnswer($response, mb_strlen($response));
+            return $this->gradeSimilarityAnswer($question, $response);
         }
 
-        // 極端に短い回答（5文字未満）は0点
-        $length = mb_strlen($response);
-        if ($length < 5) {
-            return Score::zero();
-        }
-
-        // ヒントからキーワードを抽出（簡易的な実装）
-        $hint = $question->getHint() ?? '';
-
-
-        // 語彙問題のキーワード評価
         if ($this->isVocabularyQuestion($question)) {
-            return $this->gradeVocabularyAnswer($response, $length, $hint);
+            return $this->gradeVocabularyAnswer($question, $response);
         }
 
-        // その他の自由記述は長さベースで評価
-        return $this->gradeByLength($length);
+        return $this->gradeByLength(mb_strlen($response));
     }
 
     /**
@@ -86,7 +73,7 @@ final class ScoringDomainService
     private function isSimilarityQuestion(Question $question): bool
     {
         $content = $question->getContent();
-        return str_contains($content, '共通点') || str_contains($content, 'の共通');
+        return str_contains($content, '共通点');
     }
 
     /**
@@ -95,77 +82,116 @@ final class ScoringDomainService
     private function isVocabularyQuestion(Question $question): bool
     {
         $content = $question->getContent();
-        return str_contains($content, '意味を説明') || str_contains($content, '言葉の意味');
+        return str_contains($content, 'どういう意味')
+            || str_contains($content, '意味を説明')
+            || str_contains($content, '言葉の意味');
     }
 
     /**
      * 類似問題の採点
+     *
+     * hint / correct_answer のキーワードとの部分一致で概念マッチを判定し、
+     * 日本語の文法構造（助詞・文末表現）で単語レベル vs 文章レベルを判定する。
+     *
+     * - 2点: キーワードにマッチ かつ 助詞・文末表現を含む（文章レベル）
+     * - 1点: キーワードにマッチ かつ 単語・短いフレーズ（単語レベル）
+     * - 0点: キーワードにマッチしない
      */
-    private function gradeSimilarityAnswer(string $response, int $length): Score
+    private function gradeSimilarityAnswer(Question $question, string $response): Score
     {
-        // キーワードポイント
-        $points = 0;
+        if (!$this->matchesHintConcept($question, $response)) {
+            return Score::zero();
+        }
 
-        // 抽象的なカテゴリー表現があれば高得点
-        $highLevelKeywords = [
-            '生物', '哺乳類', '動物', '食べ物', '果物', '植物', '道具', '家具',
-            '文房具', '乗り物', '交通手段', '媒体', 'メディア', '建築物',
-            '天体', '自然', '季節', '時間', '期間', '職業', '記念', '行事',
-            'スポーツ', '文学', '芸術', '感情', '要素', '概念', '状態',
-            'システム', 'インフラ', '現象', '手段', '方法', '表現'
-        ];
+        return $this->isSentenceLevel($response)
+            ? new Score(2.0)
+            : new Score(1.0);
+    }
 
-        $foundHighLevel = false;
-        foreach ($highLevelKeywords as $keyword) {
-            if (str_contains($response, $keyword)) {
-                $foundHighLevel = true;
-                break;
+    /**
+     * hint / correct_answer から抽出したキーワードと部分一致するか判定
+     * 双方向チェック: response→kw / kw→response
+     */
+    private function matchesHintConcept(Question $question, string $response): bool
+    {
+        foreach ($this->extractConceptKeywords($question) as $kw) {
+            if (str_contains($response, $kw) || str_contains($kw, $response)) {
+                return true;
             }
         }
 
-        // 抽象的表現がある場合
-        if ($foundHighLevel) {
-            $points = 2;
-        }
-        // 「どちらも」「両方」などの接続語がある場合
-        else if (preg_match('/(どちらも|両方|共に|いずれも)/', $response)) {
-            $points = $length >= 15 ? 2 : 1;
-        }
-        // 長さで判定
-        else {
-            $points = $length >= 20 ? 1 : 0;
+        return false;
+    }
+
+    /**
+     * hint と correct_answer を助詞・区切り文字で分割してキーワード配列を返す
+     *
+     * @return array<string>
+     */
+    private function extractConceptKeywords(Question $question): array
+    {
+        $sources = array_filter([
+            $question->getHint(),
+            $question->getCorrectAnswer(),
+        ]);
+
+        $keywords = [];
+
+        foreach ($sources as $source) {
+            $parts = preg_split('/[・、。／\/\s　のやとをにへ]+/u', $source) ?: [];
+            foreach ($parts as $part) {
+                $part = trim($part);
+                if (mb_strlen($part) >= 2) {
+                    $keywords[] = $part;
+                }
+            }
         }
 
-        return new Score((float) $points);
+        return array_unique($keywords);
+    }
+
+    /**
+     * 回答が文章レベルかどうかを判定（助詞・文末表現の有無）
+     */
+    private function isSentenceLevel(string $response): bool
+    {
+        return (bool) preg_match(
+            '/[はがをにでもへとやのな]|です|ます|である|している|のこと|という|ような/',
+            $response
+        );
     }
 
     /**
      * 語彙問題の採点
+     *
+     * 採点方針（寛容寄り）:
+     * - correct_answer との3文字以上の共通部分文字列があれば 2点（長さ>=8）or 1点
+     * - ・区切りキーワードが1つ以上マッチすれば 2点（長さ>=8）or 1点
+     * - 8文字以上書いていれば 1点
+     * - それ以外は 0点
      */
-    private function gradeVocabularyAnswer(string $response, int $length, string $hint): Score
+    private function gradeVocabularyAnswer(Question $question, string $response): Score
     {
-        // ヒントのキーワードが含まれているかチェック
-        $hintKeywords = preg_split('/[、。\s]+/u', $hint);
-        $keywordMatches = 0;
+        $length     = mb_strlen($response);
+        $correct    = $question->getCorrectAnswer();
 
-        foreach ($hintKeywords as $keyword) {
-            $keyword = trim($keyword);
-            if (strlen($keyword) >= 2 && str_contains($response, $keyword)) {
-                $keywordMatches++;
+        // ① correct_answer との共通部分文字列チェック（3文字以上）
+        if ($correct !== null && $this->hasCommonSubstring($response, $correct, 3)) {
+            return new Score($length >= 8 ? 2.0 : 1.0);
+        }
+
+        // ② ・区切りキーワードが存在する場合（類似問題の correct_answer 形式）
+        $keywords = $this->extractKeywords($correct ?? '');
+        if (count($keywords) >= 2) {
+            foreach ($keywords as $kw) {
+                if (str_contains($response, $kw)) {
+                    return new Score($length >= 8 ? 2.0 : 1.0);
+                }
             }
         }
 
-        // キーワードマッチが多い場合は高得点
-        if ($keywordMatches >= 2) {
-            return new Score(2.0);
-        } else if ($keywordMatches >= 1) {
-            return new Score($length >= 15 ? 2.0 : 1.0);
-        }
-
-        // キーワードなしでも十分な長さと説明があれば点数を与える
-        if ($length >= 20 && $this->hasExplanationStructure($response)) {
-            return new Score(1.0);
-        } else if ($length >= 10) {
+        // ③ 8文字以上書いていれば 1点
+        if ($length >= 8) {
             return new Score(1.0);
         }
 
@@ -173,23 +199,35 @@ final class ScoringDomainService
     }
 
     /**
-     * 説明的な構造を持っているかチェック
+     * correct_answer 文字列からキーワードを抽出する
+     * 区切り文字：「・」「、」「。」「／」「/」半角スペース
+     *
+     * @return array<string>
      */
-    private function hasExplanationStructure(string $response): bool
+    private function extractKeywords(string $text): array
     {
-        // 「〜こと」「〜である」「〜する」などの説明的表現
-        $patterns = [
-            '/こと$/',
-            '/である$/',
-            '/です$/',
-            '/する(心|気持ち|様子|状態)/',
-            '/という/',
-            '/ような/',
-            '/という意味/',
-        ];
+        $parts = preg_split('/[・、。／\/\s]+/u', $text) ?: [];
 
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $response)) {
+        return array_values(array_filter(
+            array_map('trim', $parts),
+            fn (string $kw) => mb_strlen($kw) >= 2
+        ));
+    }
+
+    /**
+     * 文字列 $haystack に $needle の minLen 文字以上の共通部分文字列があるか判定
+     */
+    private function hasCommonSubstring(string $haystack, string $needle, int $minLen): bool
+    {
+        $haystackLen = mb_strlen($haystack);
+
+        if ($haystackLen < $minLen) {
+            return false;
+        }
+
+        for ($i = 0; $i <= $haystackLen - $minLen; $i++) {
+            $sub = mb_substr($haystack, $i, $minLen);
+            if (str_contains($needle, $sub)) {
                 return true;
             }
         }
