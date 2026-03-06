@@ -34,27 +34,9 @@
       </div>
     </div>
 
-    <!-- 前段階：タイマー開始前 -->
-    <div v-if="!started" class="space-y-4">
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-        <p class="font-semibold mb-1">⏱️ タイマーを準備してください</p>
-        <p>「開始」ボタンを押すと同時に、スマホのタイマーを <strong>{{ timeLimitSeconds }}秒</strong> にセットしてください。</p>
-        <p class="mt-1">問題は一度に全て表示されます。迷ったら飛ばして次へ進んでください。</p>
-        <p v-if="subtestType === 'H'" class="mt-2 font-semibold text-indigo-800">
-          💡 上の対応表を見ながら、各数字に対応する記号（A〜J）を入力してください。
-        </p>
-      </div>
-      <button
-        @click="startTimer"
-        class="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-lg
-               hover:bg-red-700 transition-colors shadow-md"
-      >
-        タイマー開始 & 回答を開始する
-      </button>
-    </div>
 
     <!-- 問題一覧（タイマー稼働中） -->
-    <template v-else-if="!finished">
+    <template v-if="!finished">
       <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
         <div
           v-for="(q, i) in questions"
@@ -145,7 +127,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
     questions: { type: Array, required: true },
@@ -155,7 +137,6 @@ const props = defineProps({
 
 const emit = defineEmits(['submitted']);
 
-const started = ref(false);
 const finished = ref(false);
 const remainingSeconds = ref(props.timeLimitSeconds);
 const answers = ref({});
@@ -192,7 +173,6 @@ function setAnswer(questionId, value) {
 }
 
 function startTimer() {
-    started.value = true;
     timer = setInterval(() => {
         remainingSeconds.value--;
         elapsedSeconds.value++;
@@ -212,6 +192,10 @@ function submitAll() {
     }));
     emit('submitted', { answers: result, elapsedSeconds: elapsedSeconds.value });
 }
+
+onMounted(() => {
+    startTimer();
+});
 
 onUnmounted(() => {
     if (timer) clearInterval(timer);
