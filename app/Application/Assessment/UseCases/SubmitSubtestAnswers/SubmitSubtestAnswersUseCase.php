@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Application\Assessment\UseCases\SubmitSubtestAnswers;
 
+use App\Application\Assessment\DTOs\AnswerInputDto;
 use App\Application\Assessment\DTOs\AssessmentDto;
 use App\Domain\Assessment\Entities\Answer;
 use App\Domain\Assessment\Repositories\AssessmentRepositoryInterface;
 use App\Domain\Assessment\Repositories\QuestionRepositoryInterface;
 use App\Domain\Assessment\Services\ScoringDomainService;
 use App\Domain\Assessment\ValueObjects\AssessmentId;
-use App\Domain\Assessment\ValueObjects\QuestionId;
 use App\Domain\Assessment\ValueObjects\QuestionType;
 use App\Domain\Assessment\ValueObjects\Score;
 use App\Domain\Assessment\ValueObjects\SubtestType;
@@ -44,41 +44,19 @@ final class SubmitSubtestAnswersUseCase
             throw new DomainException("Subtest {$subtestType->value} is already completed.");
         }
 
-        $questions = $this->questionRepository->findBySubtestType($subtestType);
-        $questionMap = [];
-        $sequenceMap = [];
-
-        foreach ($questions as $question) {
-            $questionMap[$question->getId()->getValue()] = $question;
-            $sequenceMap[$question->getSequenceNumber()] = $question;
-        }
+        // 提出された question_id で直接DBから問題を取得する。
+        // findBySubtestType() を再呼び出しすると毎回シャッフルされるため、
+        // フロントに提示した問題と採点に使う問題がずれてしまう。
+        $submittedIds = array_map(fn (AnswerInputDto $a) => $a->questionId, $input->answers);
+        $questionMap = $this->questionRepository->findByIds($submittedIds);
 
         $validAnswers = 0;
-        $answersWithSequence = [];
 
-        // まず、送信された回答に対応する問題のシーケンス番号を特定
-        foreach ($input->answers as $index => $answerInput) {
-            $answersWithSequence[] = [
-                'input' => $answerInput,
-                'sequence' => $index + 1, // 0-based index to 1-based sequence
-            ];
-        }
-
-        foreach ($answersWithSequence as $answerData) {
-            $answerInput = $answerData['input'];
-            $expectedSequence = $answerData['sequence'];
-
-            // まず、送信された問題IDで検索
+        foreach ($input->answers as $answerInput) {
             $question = $questionMap[$answerInput->questionId] ?? null;
 
-            // 問題IDが見つからない場合は、シーケンス番号で照合
             if ($question === null) {
-                $question = $sequenceMap[$expectedSequence] ?? null;
-
-                if ($question === null) {
-                    // シーケンス番号でも見つからない場合はスキップ
-                    continue;
-                }
+                throw new DomainException("Question not found: {$answerInput->questionId}");
             }
 
             // FREE_TEXT（類似・語彙）はユーザーの自己採点スコアを使用する
