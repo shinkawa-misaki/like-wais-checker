@@ -11,6 +11,7 @@ use App\Domain\Assessment\Repositories\QuestionRepositoryInterface;
 use App\Domain\Assessment\Services\ScoringDomainService;
 use App\Domain\Assessment\ValueObjects\AssessmentId;
 use App\Domain\Assessment\ValueObjects\QuestionId;
+use App\Domain\Assessment\ValueObjects\QuestionType;
 use App\Domain\Assessment\ValueObjects\Score;
 use App\Domain\Assessment\ValueObjects\SubtestType;
 use DomainException;
@@ -80,16 +81,28 @@ final class SubmitSubtestAnswersUseCase
                 }
             }
 
-            $answer = new Answer(
-                questionId: $question->getId(), // 正しい問題IDを使用
-                assessmentId: $assessmentId,
-                response: $answerInput->response,
-                awardedScore: Score::zero(),
-            );
-
-            // Auto-grade all question types (FREE_TEXT uses gradeExact internally)
-            $gradedScore = $this->scoringService->gradeAnswer($question, $answer);
-            $answer->updateScore($gradedScore);
+            // FREE_TEXT（類似・語彙）はユーザーの自己採点スコアを使用する
+            // MULTIPLE_CHOICE / SEQUENCE は自動採点する
+            if ($question->getQuestionType() === QuestionType::FREE_TEXT) {
+                $awardedScore = new Score(
+                    max(0.0, min((float) ($answerInput->awardedScore ?? 0), (float) $question->getMaxPoints()))
+                );
+                $answer = new Answer(
+                    questionId: $question->getId(),
+                    assessmentId: $assessmentId,
+                    response: $answerInput->response,
+                    awardedScore: $awardedScore,
+                );
+            } else {
+                $answer = new Answer(
+                    questionId: $question->getId(),
+                    assessmentId: $assessmentId,
+                    response: $answerInput->response,
+                    awardedScore: Score::zero(),
+                );
+                $gradedScore = $this->scoringService->gradeAnswer($question, $answer);
+                $answer->updateScore($gradedScore);
+            }
 
             $assessment->addAnswer($answer);
             $validAnswers++;
