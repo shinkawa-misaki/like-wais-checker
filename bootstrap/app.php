@@ -11,9 +11,15 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        //
+    ->withMiddleware(function (Middleware $middleware) {
+        // 【追加】ALB（プロキシ）を信頼する設定
+        $middleware->trustProxies(at: '*');
+
+        // APIルートのCSRF保護を除外
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+        ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
