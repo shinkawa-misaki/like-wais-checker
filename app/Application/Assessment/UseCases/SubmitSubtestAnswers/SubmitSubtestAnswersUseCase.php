@@ -80,7 +80,6 @@ final class SubmitSubtestAnswersUseCase
                 }
             }
 
-            // Create answer with the correct question ID
             $answer = new Answer(
                 questionId: $question->getId(), // 正しい問題IDを使用
                 assessmentId: $assessmentId,
@@ -88,7 +87,7 @@ final class SubmitSubtestAnswersUseCase
                 awardedScore: Score::zero(),
             );
 
-            // Auto-grade all answers using the scoring service
+            // Auto-grade all question types (FREE_TEXT uses gradeExact internally)
             $gradedScore = $this->scoringService->gradeAnswer($question, $answer);
             $answer->updateScore($gradedScore);
 
