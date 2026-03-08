@@ -35,6 +35,7 @@ class AssessmentModel extends Model
 
     /** @var array<string, mixed> */
     protected $attributes = [
+        'status' => 'in_progress',
         'completed_subtests' => '[]',
     ];
 
@@ -50,5 +51,16 @@ class AssessmentModel extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(AnswerModel::class, 'assessment_id', 'id');
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->completed_subtests)) {
+                $model->completed_subtests = [];
+            }
+        });
     }
 }

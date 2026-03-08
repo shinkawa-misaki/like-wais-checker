@@ -7,6 +7,12 @@
         <h2 class="text-xl font-bold text-gray-900">実施前のご確認</h2>
       </div>
 
+      <!-- エラーメッセージ -->
+      <div v-if="errorMessage" class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+        <p class="font-semibold">エラーが発生しました</p>
+        <p class="mt-1">{{ errorMessage }}</p>
+      </div>
+
       <!-- 注意事項 -->
       <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 space-y-3 text-sm text-gray-700">
         <p class="font-semibold text-amber-800">【重要な注意】</p>
@@ -78,6 +84,7 @@ import { useAssessmentStore, SUBTEST_ORDER } from '../stores/assessment.js';
 const router = useRouter();
 const store = useAssessmentStore();
 const loading = ref(false);
+const errorMessage = ref('');
 
 const checklist = ref([
     { id: 'quiet', label: '静かな場所にいる', checked: false },
@@ -91,10 +98,17 @@ const allChecked = computed(() => checklist.value.every(item => item.checked));
 async function start() {
     if (!allChecked.value) return;
     loading.value = true;
+    errorMessage.value = '';
     try {
-        await store.startAssessment();
-        router.push({ name: 'subtest', params: { subtestType: SUBTEST_ORDER[0] } });
-    } catch {
+        console.log('Starting assessment...');
+        const result = await store.startAssessment();
+        console.log('Assessment started:', result);
+        console.log('Navigating to subtest:', SUBTEST_ORDER[0]);
+        await router.push({ name: 'subtest', params: { subtestType: SUBTEST_ORDER[0] } });
+    } catch (error) {
+        console.error('Failed to start assessment:', error);
+        console.error('Error response:', error.response?.data);
+        errorMessage.value = error.response?.data?.error || error.response?.data?.message || 'アセスメントの開始に失敗しました。ページを再読み込みして再度お試しください。';
         loading.value = false;
     }
 }
