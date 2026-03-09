@@ -164,14 +164,14 @@ final class AssessmentApiTest extends TestCase
         $response->assertStatus(422);
     }
 
-    public function test_submit_answers_requires_answers_field(): void
+    public function test_submit_without_answers_completes_subtest(): void
     {
         $assessmentId = $this->startAssessment();
 
+        // 回答なしでもサブテスト完了マークとして200が返る
         $response = $this->postJson("/api/assessments/{$assessmentId}/subtests/A/answers", []);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['answers']);
+        $response->assertStatus(200);
     }
 
     public function test_submit_answers_requires_valid_question_uuid(): void
@@ -185,6 +185,63 @@ final class AssessmentApiTest extends TestCase
         ]);
 
         $response->assertStatus(422);
+    }
+
+    // -----------------------------------------------------------------------
+    // Per-question save (1問ずつ保存) tests
+    // -----------------------------------------------------------------------
+
+    public function test_save_single_answer_returns_200(): void
+    {
+        $assessmentId = $this->startAssessment();
+        $questions = $this->getQuestions($assessmentId, 'A');
+
+        $response = $this->postJson("/api/assessments/{$assessmentId}/subtests/A/answer", [
+            'question_id'   => $questions[0]['id'],
+            'response'      => 'テスト回答',
+            'awarded_score' => 2,
+        ]);
+
+        $response->assertStatus(200);
+    }
+
+    public function test_per_question_save_then_complete_gives_correct_vci(): void
+    {
+        $assessmentId = $this->startAssessment();
+
+        // Subtest A: 1問ずつ保存 (全問2点)
+        $questionsA = $this->getQuestions($assessmentId, 'A');
+        foreach ($questionsA as $q) {
+            $this->postJson("/api/assessments/{$assessmentId}/subtests/A/answer", [
+                'question_id'   => $q['id'],
+                'response'      => '回答',
+                'awarded_score' => 2,
+            ])->assertStatus(200);
+        }
+        // 完了マーク (回答なし)
+        $this->postJson("/api/assessments/{$assessmentId}/subtests/A/answers", [])
+            ->assertStatus(200);
+
+        // Subtest B: 1問ずつ保存 (全問1点)
+        $questionsB = $this->getQuestions($assessmentId, 'B');
+        foreach ($questionsB as $q) {
+            $this->postJson("/api/assessments/{$assessmentId}/subtests/B/answer", [
+                'question_id'   => $q['id'],
+                'response'      => '回答',
+                'awarded_score' => 1,
+            ])->assertStatus(200);
+        }
+        $this->postJson("/api/assessments/{$assessmentId}/subtests/B/answers", [])
+            ->assertStatus(200);
+
+        // 残りのサブテストを完了
+        $this->completeRemainingSubtests($assessmentId, ['A', 'B']);
+
+        $report = $this->getJson("/api/assessments/{$assessmentId}/report")->assertStatus(200);
+
+        // A: 10×2=20, B: 10×1=10 → VCI = 30
+        $vci = $this->findIndexScore($report->json('data.indexScores'), 'VCI');
+        $this->assertEquals(30.0, $vci['rawScore'], 'VCI raw score should be 30 (per-question save)');
     }
 
     // -----------------------------------------------------------------------

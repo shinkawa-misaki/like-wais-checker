@@ -44,15 +44,35 @@ final class SubmitSubtestAnswersUseCase
             throw new DomainException("Subtest {$subtestType->value} is already completed.");
         }
 
-        // 提出された question_id で直接DBから問題を取得する。
-        // findBySubtestType() を再呼び出しすると毎回シャッフルされるため、
-        // フロントに提示した問題と採点に使う問題がずれてしまう。
-        $submittedIds = array_map(fn (AnswerInputDto $a) => $a->questionId, $input->answers);
+        // 回答データが提供されている場合（タイムド系サブテストの一括送信）
+        if (count($input->answers) > 0) {
+            $this->processAnswers($input->answers, $assessmentId, $assessment);
+        }
+        // 回答データなしの場合は、既にDBに個別保存されている前提でスキップ
+
+        $assessment->markSubtestCompleted($subtestType);
+
+        if ($assessment->areAllSubtestsCompleted()) {
+            $assessment->complete();
+        }
+
+        $this->assessmentRepository->save($assessment);
+
+        return AssessmentDto::fromEntity($assessment);
+    }
+
+    /**
+     * @param array<AnswerInputDto> $answers
+     */
+    private function processAnswers(
+        array $answers,
+        AssessmentId $assessmentId,
+        \App\Domain\Assessment\Entities\Assessment $assessment,
+    ): void {
+        $submittedIds = array_map(fn (AnswerInputDto $a) => $a->questionId, $answers);
         $questionMap = $this->questionRepository->findByIds($submittedIds);
 
-        $validAnswers = 0;
-
-        foreach ($input->answers as $answerInput) {
+        foreach ($answers as $answerInput) {
             $question = $questionMap[$answerInput->questionId] ?? null;
 
             if ($question === null) {
@@ -83,24 +103,6 @@ final class SubmitSubtestAnswersUseCase
             }
 
             $assessment->addAnswer($answer);
-            $validAnswers++;
         }
-
-        // 有効な回答が1つもない場合はエラー
-        if ($validAnswers === 0 && count($input->answers) > 0) {
-            throw new DomainException(
-                "No valid answers found. Please refresh the page and restart the subtest."
-            );
-        }
-
-        $assessment->markSubtestCompleted($subtestType);
-
-        if ($assessment->areAllSubtestsCompleted()) {
-            $assessment->complete();
-        }
-
-        $this->assessmentRepository->save($assessment);
-
-        return AssessmentDto::fromEntity($assessment);
     }
 }

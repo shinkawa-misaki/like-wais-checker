@@ -35,22 +35,26 @@ final class EloquentAssessmentRepository implements AssessmentRepositoryInterfac
         }
     }
 
-    private function saveAnswer(Answer $answer): void
+    public function saveAnswer(Answer $answer): void
     {
-        AnswerModel::updateOrCreate(
-            [
-                'assessment_id' => $answer->getAssessmentId()->getValue(),
-                'question_id'   => $answer->getQuestionId()->getValue(),
-            ],
-            [
+        $model = AnswerModel::where('assessment_id', $answer->getAssessmentId()->getValue())
+            ->where('question_id', $answer->getQuestionId()->getValue())
+            ->first();
+
+        if ($model !== null) {
+            $model->update([
+                'response'      => $answer->getResponse(),
+                'awarded_score' => $answer->getAwardedScore()->getValue(),
+            ]);
+        } else {
+            AnswerModel::create([
                 'id'            => (string) Str::uuid(),
                 'assessment_id' => $answer->getAssessmentId()->getValue(),
                 'question_id'   => $answer->getQuestionId()->getValue(),
                 'response'      => $answer->getResponse(),
                 'awarded_score' => $answer->getAwardedScore()->getValue(),
-                'created_at'    => now()->format('Y-m-d H:i:s'),
-            ]
-        );
+            ]);
+        }
     }
 
     public function findById(AssessmentId $id): ?Assessment

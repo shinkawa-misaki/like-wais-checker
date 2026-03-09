@@ -17,7 +17,7 @@ final class SubmitSubtestAnswersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'answers'                    => ['required', 'array', 'min:1'],
+            'answers'                    => ['sometimes', 'array'],
             'answers.*.question_id'      => ['required', 'string', 'uuid'],
             'answers.*.response'         => ['nullable', 'string'],
             'answers.*.awarded_score'    => ['nullable', 'numeric', 'min:0', 'max:2'],
