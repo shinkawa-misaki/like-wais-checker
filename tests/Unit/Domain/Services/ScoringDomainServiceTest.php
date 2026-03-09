@@ -140,61 +140,6 @@ final class ScoringDomainServiceTest extends TestCase
         $this->assertSame(0.0, $score->getValue());
     }
 
-    public function test_symbol_search_score_with_all_correct(): void
-    {
-        $questions = [
-            $this->createQuestion(QuestionType::TIME_BASED, '○'),
-            $this->createQuestion(QuestionType::TIME_BASED, '×'),
-        ];
-
-        $answers = [
-            $this->createAnswer($questions[0], '○'),
-            $this->createAnswer($questions[1], '×'),
-        ];
-
-        $score = $this->service->calculateSymbolSearchScore($answers, $questions);
-
-        $this->assertSame(2.0, $score->getValue());
-    }
-
-    public function test_symbol_search_score_with_penalty(): void
-    {
-        $questions = [
-            $this->createQuestion(QuestionType::TIME_BASED, '○'),
-            $this->createQuestion(QuestionType::TIME_BASED, '×'),
-            $this->createQuestion(QuestionType::TIME_BASED, '○'),
-        ];
-
-        // 2正解、1誤答 → 2 - (1 × 0.5) = 1.5
-        $answers = [
-            $this->createAnswer($questions[0], '○'),
-            $this->createAnswer($questions[1], '○'), // wrong
-            $this->createAnswer($questions[2], '○'),
-        ];
-
-        $score = $this->service->calculateSymbolSearchScore($answers, $questions);
-
-        $this->assertSame(1.5, $score->getValue());
-    }
-
-    public function test_symbol_search_score_never_goes_below_zero(): void
-    {
-        $questions = [
-            $this->createQuestion(QuestionType::TIME_BASED, '○'),
-            $this->createQuestion(QuestionType::TIME_BASED, '×'),
-        ];
-
-        // 0正解、2誤答 → 0 - (2 × 0.5) = -1 → 0
-        $answers = [
-            $this->createAnswer($questions[0], '×'),
-            $this->createAnswer($questions[1], '○'),
-        ];
-
-        $score = $this->service->calculateSymbolSearchScore($answers, $questions);
-
-        $this->assertSame(0.0, $score->getValue());
-    }
-
     public function test_calculate_index_score_for_vci(): void
     {
         $subtestScores = [

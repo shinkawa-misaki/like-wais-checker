@@ -46,9 +46,7 @@ final class GenerateReportUseCase
             $answersByQuestion[$answer->getQuestionId()->getValue()] = $answer;
         }
 
-        // 回答に含まれるquestion_idでDBから問題を取得する。
-        // findBySubtestType()は毎回shuffle()するため、採点時と異なるIDが返り
-        // 全スコアが0になる。
+        // 回答に含まれるquestion_idでDBから問題を取得する
         $allQuestionIds = array_keys($answersByQuestion);
         $allQuestions = $this->questionRepository->findByIds($allQuestionIds);
 
@@ -76,8 +74,7 @@ final class GenerateReportUseCase
 
             $subtestScores[$subtestType->value] = $this->scoringService->calculateSubtestScore(
                 $subtestType,
-                $subtestAnswers,
-                $questions
+                $subtestAnswers
             );
         }
 

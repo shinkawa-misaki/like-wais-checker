@@ -78,10 +78,17 @@ final class SubmitSubtestAnswersUseCase
             }
 
             if ($question->getQuestionType() === QuestionType::FREE_TEXT) {
+                // 自由記述：ユーザーの自己採点スコアを使用
+                $awardedScore = new Score(
+                    max(0.0, min((float) ($answerInput->awardedScore ?? 0), (float) $question->getMaxPoints()))
+                );
+            } elseif ($question->getQuestionType() === QuestionType::TIME_BASED) {
+                // タイムド系（シンボルサーチ等）：フロントエンドから送信されたスコアを使用
                 $awardedScore = new Score(
                     max(0.0, min((float) ($answerInput->awardedScore ?? 0), (float) $question->getMaxPoints()))
                 );
             } else {
+                // 選択式・配列式：自動採点
                 $tempAnswer = new Answer(
                     questionId: $question->getId(),
                     assessmentId: $assessmentId,

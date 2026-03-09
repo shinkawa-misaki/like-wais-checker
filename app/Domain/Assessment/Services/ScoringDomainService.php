@@ -65,66 +65,14 @@ final class ScoringDomainService
     }
 
     /**
-     * Calculate symbol search subtest score: correct - (wrong * 0.5), min 0.
-     *
-     * @param array<Answer> $answers
-     * @param array<Question> $questions
-     */
-    public function calculateSymbolSearchScore(array $answers, array $questions): Score
-    {
-        $correct = 0;
-        $wrong = 0;
-        $questionMap = [];
-
-        foreach ($questions as $question) {
-            $questionMap[$question->getId()->getValue()] = $question;
-        }
-
-        foreach ($answers as $answer) {
-            $question = $questionMap[$answer->getQuestionId()->getValue()] ?? null;
-
-            if ($question === null) {
-                continue;
-            }
-
-            // 未回答（空の回答）はスキップ
-            $response = trim($answer->getResponse());
-            if ($response === '') {
-                continue;
-            }
-
-            $correctAnswer = $question->getCorrectAnswer();
-            if ($correctAnswer === null) {
-                continue;
-            }
-
-            $isCorrect = strtolower($response) === strtolower(trim($correctAnswer));
-
-            if ($isCorrect) {
-                $correct++;
-            } else {
-                $wrong++;
-            }
-        }
-
-        $raw = $correct - ($wrong * 0.5);
-        $final = max(0.0, $raw);
-
-        return new Score($final);
-    }
-
-    /**
      * Calculate total score for a subtest from its answers.
+     * All answers already have their awarded_score set in the database,
+     * so this simply sums them up.
      *
      * @param array<Answer> $answers
-     * @param array<Question> $questions
      */
-    public function calculateSubtestScore(SubtestType $subtestType, array $answers, array $questions): Score
+    public function calculateSubtestScore(SubtestType $subtestType, array $answers): Score
     {
-        if ($subtestType === SubtestType::SYMBOL_SEARCH) {
-            return $this->calculateSymbolSearchScore($answers, $questions);
-        }
-
         $total = Score::zero();
 
         foreach ($answers as $answer) {
