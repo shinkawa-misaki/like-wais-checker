@@ -13,6 +13,7 @@ return new class () extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('assessment_id');
             $table->uuid('question_id');
+            $table->string('subtest_type', 1);
             $table->text('response');
             $table->decimal('awarded_score', 5, 2)->default(0);
             $table->timestamps();
@@ -20,6 +21,7 @@ return new class () extends Migration {
             $table->foreign('assessment_id')->references('id')->on('assessments')->cascadeOnDelete();
             $table->foreign('question_id')->references('id')->on('questions');
             $table->index(['assessment_id', 'question_id']);
+            $table->index(['assessment_id', 'subtest_type']);
         });
     }
 
