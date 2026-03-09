@@ -28,7 +28,7 @@ final class SubmitSubtestAnswersUseCase
     public function execute(SubmitSubtestAnswersInput $input): AssessmentDto
     {
         $assessmentId = new AssessmentId($input->assessmentId);
-        $assessment = $this->assessmentRepository->findById($assessmentId);
+        $assessment   = $this->assessmentRepository->findById($assessmentId);
 
         if ($assessment === null) {
             throw new DomainException("Assessment not found: {$input->assessmentId}");
@@ -44,9 +44,8 @@ final class SubmitSubtestAnswersUseCase
             throw new DomainException("Subtest {$subtestType->value} is already completed.");
         }
 
-        // タイムド系サブテストの一括送信：回答を1件ずつDBへ直接保存
         if (count($input->answers) > 0) {
-            $this->saveAnswersToDb($input->answers, $assessmentId);
+            $this->saveAnswersToDb($input->answers, $assessmentId, $subtestType);
         }
 
         $assessment->markSubtestCompleted($subtestType);
@@ -61,14 +60,17 @@ final class SubmitSubtestAnswersUseCase
     }
 
     /**
-     * 回答を採点してDBへ直接保存する（インメモリのAssessmentには追加しない）
+     * 回答を採点してDBへ直接保存する。
      *
      * @param array<AnswerInputDto> $answers
      */
-    private function saveAnswersToDb(array $answers, AssessmentId $assessmentId): void
-    {
+    private function saveAnswersToDb(
+        array $answers,
+        AssessmentId $assessmentId,
+        SubtestType $subtestType,
+    ): void {
         $submittedIds = array_map(fn (AnswerInputDto $a) => $a->questionId, $answers);
-        $questionMap = $this->questionRepository->findByIds($submittedIds);
+        $questionMap  = $this->questionRepository->findByIds($submittedIds);
 
         foreach ($answers as $answerInput) {
             $question = $questionMap[$answerInput->questionId] ?? null;
@@ -77,21 +79,20 @@ final class SubmitSubtestAnswersUseCase
                 throw new DomainException("Question not found: {$answerInput->questionId}");
             }
 
-            if ($question->getQuestionType() === QuestionType::FREE_TEXT) {
-                // 自由記述：ユーザーの自己採点スコアを使用
-                $awardedScore = new Score(
-                    max(0.0, min((float) ($answerInput->awardedScore ?? 0), (float) $question->getMaxPoints()))
-                );
-            } elseif ($question->getQuestionType() === QuestionType::TIME_BASED) {
-                // タイムド系（シンボルサーチ等）：フロントエンドから送信されたスコアを使用
+            if (
+                $question->getQuestionType() === QuestionType::FREE_TEXT
+                || $question->getQuestionType() === QuestionType::TIME_BASED
+            ) {
+                // 自由記述 / タイムド系：ユーザー送信のスコアを使用
                 $awardedScore = new Score(
                     max(0.0, min((float) ($answerInput->awardedScore ?? 0), (float) $question->getMaxPoints()))
                 );
             } else {
-                // 選択式・配列式：自動採点
-                $tempAnswer = new Answer(
+                // 選択式 / 配列式：自動採点
+                $tempAnswer   = new Answer(
                     questionId: $question->getId(),
                     assessmentId: $assessmentId,
+                    subtestType: $subtestType,
                     response: $answerInput->response,
                     awardedScore: Score::zero(),
                 );
@@ -101,6 +102,7 @@ final class SubmitSubtestAnswersUseCase
             $answer = new Answer(
                 questionId: $question->getId(),
                 assessmentId: $assessmentId,
+                subtestType: $subtestType,
                 response: $answerInput->response,
                 awardedScore: $awardedScore,
             );

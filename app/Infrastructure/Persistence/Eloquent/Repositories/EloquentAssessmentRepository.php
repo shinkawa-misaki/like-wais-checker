@@ -11,6 +11,7 @@ use App\Domain\Assessment\ValueObjects\AssessmentId;
 use App\Domain\Assessment\ValueObjects\AssessmentStatus;
 use App\Domain\Assessment\ValueObjects\QuestionId;
 use App\Domain\Assessment\ValueObjects\Score;
+use App\Domain\Assessment\ValueObjects\SubtestType;
 use App\Infrastructure\Persistence\Eloquent\Models\AnswerModel;
 use App\Infrastructure\Persistence\Eloquent\Models\AssessmentModel;
 use DateTimeImmutable;
@@ -39,6 +40,7 @@ final class EloquentAssessmentRepository implements AssessmentRepositoryInterfac
 
         if ($model !== null) {
             $model->update([
+                'subtest_type'  => $answer->getSubtestType()->value,
                 'response'      => $answer->getResponse(),
                 'awarded_score' => $answer->getAwardedScore()->getValue(),
             ]);
@@ -47,6 +49,7 @@ final class EloquentAssessmentRepository implements AssessmentRepositoryInterfac
                 'id'            => (string) Str::uuid(),
                 'assessment_id' => $answer->getAssessmentId()->getValue(),
                 'question_id'   => $answer->getQuestionId()->getValue(),
+                'subtest_type'  => $answer->getSubtestType()->value,
                 'response'      => $answer->getResponse(),
                 'awarded_score' => $answer->getAwardedScore()->getValue(),
             ]);
@@ -70,6 +73,7 @@ final class EloquentAssessmentRepository implements AssessmentRepositoryInterfac
             fn (AnswerModel $a) => new Answer(
                 questionId: new QuestionId($a->question_id),
                 assessmentId: new AssessmentId($a->assessment_id),
+                subtestType: SubtestType::from($a->subtest_type),
                 response: $a->response,
                 awardedScore: new Score($a->awarded_score),
             )

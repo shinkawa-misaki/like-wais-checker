@@ -26,7 +26,7 @@ final class SaveSingleAnswerUseCase
     public function execute(SaveSingleAnswerInput $input): void
     {
         $assessmentId = new AssessmentId($input->assessmentId);
-        $assessment = $this->assessmentRepository->findById($assessmentId);
+        $assessment   = $this->assessmentRepository->findById($assessmentId);
 
         if ($assessment === null) {
             throw new DomainException("Assessment not found: {$input->assessmentId}");
@@ -42,24 +42,26 @@ final class SaveSingleAnswerUseCase
             throw new DomainException("Subtest {$subtestType->value} is already completed.");
         }
 
-        // 問題をDBから取得
         $questions = $this->questionRepository->findByIds([$input->questionId]);
-        $question = $questions[$input->questionId] ?? null;
+        $question  = $questions[$input->questionId] ?? null;
 
         if ($question === null) {
             throw new DomainException("Question not found: {$input->questionId}");
         }
 
         // 採点: FREE_TEXT / TIME_BASED はユーザーの自己採点、それ以外は自動採点
-        if ($question->getQuestionType() === QuestionType::FREE_TEXT
-            || $question->getQuestionType() === QuestionType::TIME_BASED) {
+        if (
+            $question->getQuestionType() === QuestionType::FREE_TEXT
+            || $question->getQuestionType() === QuestionType::TIME_BASED
+        ) {
             $awardedScore = new Score(
                 max(0.0, min((float) ($input->awardedScore ?? 0), (float) $question->getMaxPoints()))
             );
         } else {
-            $tempAnswer = new Answer(
+            $tempAnswer   = new Answer(
                 questionId: $question->getId(),
                 assessmentId: $assessmentId,
+                subtestType: $subtestType,
                 response: $input->response,
                 awardedScore: Score::zero(),
             );
@@ -69,11 +71,11 @@ final class SaveSingleAnswerUseCase
         $answer = new Answer(
             questionId: $question->getId(),
             assessmentId: $assessmentId,
+            subtestType: $subtestType,
             response: $input->response,
             awardedScore: $awardedScore,
         );
 
-        // 即座にDBへ保存
         $this->assessmentRepository->saveAnswer($answer);
     }
 }

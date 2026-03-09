@@ -11,8 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $id
  * @property string $assessment_id
  * @property string $question_id
+ * @property string $subtest_type
  * @property string $response
- * @property float $awarded_score
+ * @property float  $awarded_score
  * @property string $created_at
  */
 class AnswerModel extends Model
@@ -35,6 +36,7 @@ class AnswerModel extends Model
         'id',
         'assessment_id',
         'question_id',
+        'subtest_type',
         'response',
         'awarded_score',
     ];

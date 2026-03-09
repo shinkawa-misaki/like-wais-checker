@@ -172,18 +172,20 @@ final class ScoringDomainServiceTest extends TestCase
             new Answer(
                 questionId: $questions[0]->getId(),
                 assessmentId: AssessmentId::generate(),
+                subtestType: SubtestType::SIMILARITIES,
                 response: '回答1',
                 awardedScore: new Score(2.0),
             ),
             new Answer(
                 questionId: $questions[1]->getId(),
                 assessmentId: AssessmentId::generate(),
+                subtestType: SubtestType::SIMILARITIES,
                 response: '回答2',
                 awardedScore: new Score(1.0),
             ),
         ];
 
-        $score = $this->service->calculateSubtestScore(SubtestType::SIMILARITIES, $answers, $questions);
+        $score = $this->service->calculateSubtestScore($answers);
 
         $this->assertSame(3.0, $score->getValue());
     }
@@ -206,6 +208,7 @@ final class ScoringDomainServiceTest extends TestCase
         return new Answer(
             questionId: $question->getId(),
             assessmentId: AssessmentId::generate(),
+            subtestType: $question->getSubtestType(),
             response: $response,
             awardedScore: Score::zero(),
         );

@@ -7,12 +7,14 @@ namespace App\Domain\Assessment\Entities;
 use App\Domain\Assessment\ValueObjects\AssessmentId;
 use App\Domain\Assessment\ValueObjects\QuestionId;
 use App\Domain\Assessment\ValueObjects\Score;
+use App\Domain\Assessment\ValueObjects\SubtestType;
 
 final class Answer
 {
     public function __construct(
         private readonly QuestionId $questionId,
         private readonly AssessmentId $assessmentId,
+        private readonly SubtestType $subtestType,
         private readonly string $response,
         private Score $awardedScore,
     ) {
@@ -26,6 +28,11 @@ final class Answer
     public function getAssessmentId(): AssessmentId
     {
         return $this->assessmentId;
+    }
+
+    public function getSubtestType(): SubtestType
+    {
+        return $this->subtestType;
     }
 
     public function getResponse(): string

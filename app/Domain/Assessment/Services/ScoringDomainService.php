@@ -7,8 +7,10 @@ namespace App\Domain\Assessment\Services;
 use App\Domain\Assessment\Entities\Answer;
 use App\Domain\Assessment\Entities\Question;
 use App\Domain\Assessment\ValueObjects\IndexType;
+use App\Domain\Assessment\ValueObjects\QuestionType;
 use App\Domain\Assessment\ValueObjects\Score;
 use App\Domain\Assessment\ValueObjects\SubtestType;
+use LogicException;
 
 final class ScoringDomainService
 {
@@ -20,10 +22,9 @@ final class ScoringDomainService
     public function gradeAnswer(Question $question, Answer $answer): Score
     {
         return match ($question->getQuestionType()) {
-            \App\Domain\Assessment\ValueObjects\QuestionType::FREE_TEXT       => $this->gradeFreeText($question, $answer),
-            \App\Domain\Assessment\ValueObjects\QuestionType::MULTIPLE_CHOICE,
-            \App\Domain\Assessment\ValueObjects\QuestionType::SEQUENCE        => $this->gradeExact($question, $answer),
-            \App\Domain\Assessment\ValueObjects\QuestionType::TIME_BASED      => throw new \LogicException(
+            QuestionType::FREE_TEXT                         => $this->gradeFreeText($question, $answer),
+            QuestionType::MULTIPLE_CHOICE, QuestionType::SEQUENCE => $this->gradeExact($question, $answer),
+            QuestionType::TIME_BASED                        => throw new LogicException(
                 'TIME_BASED questions should use user-provided awarded_score, not gradeAnswer()'
             ),
         };
@@ -66,13 +67,12 @@ final class ScoringDomainService
     }
 
     /**
-     * Calculate total score for a subtest from its answers.
-     * All answers already have their awarded_score set in the database,
-     * so this simply sums them up.
+     * Calculate total score for a subtest by summing awarded_score of each answer.
+     * Scores are already persisted in the DB — no re-grading is performed here.
      *
      * @param array<Answer> $answers
      */
-    public function calculateSubtestScore(SubtestType $subtestType, array $answers): Score
+    public function calculateSubtestScore(array $answers): Score
     {
         $total = Score::zero();
 
