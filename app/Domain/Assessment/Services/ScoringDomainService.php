@@ -14,9 +14,8 @@ final class ScoringDomainService
 {
     /**
      * Grade a single answer against its question.
-     * For FREE_TEXT questions, auto-grading is applied based on content analysis.
-     * For MULTIPLE_CHOICE and SEQUENCE questions, auto-grading is applied.
-     * For TIME_BASED questions (Symbol Search), penalty scoring is applied.
+     * Only for MULTIPLE_CHOICE, SEQUENCE, and FREE_TEXT (auto-grading).
+     * TIME_BASED questions use user-provided awarded_score and should not call this method.
      */
     public function gradeAnswer(Question $question, Answer $answer): Score
     {
@@ -24,7 +23,9 @@ final class ScoringDomainService
             \App\Domain\Assessment\ValueObjects\QuestionType::FREE_TEXT       => $this->gradeFreeText($question, $answer),
             \App\Domain\Assessment\ValueObjects\QuestionType::MULTIPLE_CHOICE,
             \App\Domain\Assessment\ValueObjects\QuestionType::SEQUENCE        => $this->gradeExact($question, $answer),
-            \App\Domain\Assessment\ValueObjects\QuestionType::TIME_BASED      => $answer->getAwardedScore(),
+            \App\Domain\Assessment\ValueObjects\QuestionType::TIME_BASED      => throw new \LogicException(
+                'TIME_BASED questions should use user-provided awarded_score, not gradeAnswer()'
+            ),
         };
     }
 

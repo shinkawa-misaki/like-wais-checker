@@ -50,8 +50,9 @@ final class SaveSingleAnswerUseCase
             throw new DomainException("Question not found: {$input->questionId}");
         }
 
-        // 採点: FREE_TEXT はユーザーの自己採点、それ以外は自動採点
-        if ($question->getQuestionType() === QuestionType::FREE_TEXT) {
+        // 採点: FREE_TEXT / TIME_BASED はユーザーの自己採点、それ以外は自動採点
+        if ($question->getQuestionType() === QuestionType::FREE_TEXT
+            || $question->getQuestionType() === QuestionType::TIME_BASED) {
             $awardedScore = new Score(
                 max(0.0, min((float) ($input->awardedScore ?? 0), (float) $question->getMaxPoints()))
             );
