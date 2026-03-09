@@ -29,10 +29,6 @@ final class EloquentAssessmentRepository implements AssessmentRepositoryInterfac
         ];
 
         AssessmentModel::updateOrCreate(['id' => $data['id']], $data);
-
-        foreach ($assessment->getAnswers() as $answer) {
-            $this->saveAnswer($answer);
-        }
     }
 
     public function saveAnswer(Answer $answer): void

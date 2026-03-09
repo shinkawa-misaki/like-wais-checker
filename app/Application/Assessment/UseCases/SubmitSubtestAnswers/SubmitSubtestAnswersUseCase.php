@@ -44,11 +44,10 @@ final class SubmitSubtestAnswersUseCase
             throw new DomainException("Subtest {$subtestType->value} is already completed.");
         }
 
-        // 回答データが提供されている場合（タイムド系サブテストの一括送信）
+        // タイムド系サブテストの一括送信：回答を1件ずつDBへ直接保存
         if (count($input->answers) > 0) {
-            $this->processAnswers($input->answers, $assessmentId, $assessment);
+            $this->saveAnswersToDb($input->answers, $assessmentId);
         }
-        // 回答データなしの場合は、既にDBに個別保存されている前提でスキップ
 
         $assessment->markSubtestCompleted($subtestType);
 
@@ -62,13 +61,12 @@ final class SubmitSubtestAnswersUseCase
     }
 
     /**
+     * 回答を採点してDBへ直接保存する（インメモリのAssessmentには追加しない）
+     *
      * @param array<AnswerInputDto> $answers
      */
-    private function processAnswers(
-        array $answers,
-        AssessmentId $assessmentId,
-        \App\Domain\Assessment\Entities\Assessment $assessment,
-    ): void {
+    private function saveAnswersToDb(array $answers, AssessmentId $assessmentId): void
+    {
         $submittedIds = array_map(fn (AnswerInputDto $a) => $a->questionId, $answers);
         $questionMap = $this->questionRepository->findByIds($submittedIds);
 
@@ -79,30 +77,28 @@ final class SubmitSubtestAnswersUseCase
                 throw new DomainException("Question not found: {$answerInput->questionId}");
             }
 
-            // FREE_TEXT（類似・語彙）はユーザーの自己採点スコアを使用する
-            // MULTIPLE_CHOICE / SEQUENCE は自動採点する
             if ($question->getQuestionType() === QuestionType::FREE_TEXT) {
                 $awardedScore = new Score(
                     max(0.0, min((float) ($answerInput->awardedScore ?? 0), (float) $question->getMaxPoints()))
                 );
-                $answer = new Answer(
-                    questionId: $question->getId(),
-                    assessmentId: $assessmentId,
-                    response: $answerInput->response,
-                    awardedScore: $awardedScore,
-                );
             } else {
-                $answer = new Answer(
+                $tempAnswer = new Answer(
                     questionId: $question->getId(),
                     assessmentId: $assessmentId,
                     response: $answerInput->response,
                     awardedScore: Score::zero(),
                 );
-                $gradedScore = $this->scoringService->gradeAnswer($question, $answer);
-                $answer->updateScore($gradedScore);
+                $awardedScore = $this->scoringService->gradeAnswer($question, $tempAnswer);
             }
 
-            $assessment->addAnswer($answer);
+            $answer = new Answer(
+                questionId: $question->getId(),
+                assessmentId: $assessmentId,
+                response: $answerInput->response,
+                awardedScore: $awardedScore,
+            );
+
+            $this->assessmentRepository->saveAnswer($answer);
         }
     }
 }

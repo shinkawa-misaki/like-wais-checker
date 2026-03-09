@@ -91,15 +91,6 @@ final class Assessment
         }
     }
 
-    public function addAnswer(Answer $answer): void
-    {
-        if ($this->status->isCompleted()) {
-            throw new DomainException('Cannot add answers to a completed assessment.');
-        }
-
-        $this->answers[] = $answer;
-    }
-
     public function complete(): void
     {
         if ($this->status->isCompleted()) {
