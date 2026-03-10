@@ -24,6 +24,16 @@ Route::get('/debug-opcache', function () {
     ]);
 });
 
+// 一時: マイグレーション実行（ローカル環境のみ）
+Route::get('/run-migrate', function () {
+    if (! app()->isLocal()) {
+        abort(403);
+    }
+    $output = new \Symfony\Component\Console\Output\BufferedOutput();
+    \Artisan::call('migrate', ['--force' => true], $output);
+    return response()->json(['output' => $output->fetch()]);
+});
+
 Route::prefix('assessments')->group(function (): void {
     // アセスメント開始
     Route::post('/', [AssessmentController::class, 'start'])
