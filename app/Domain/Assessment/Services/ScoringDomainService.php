@@ -17,16 +17,14 @@ final class ScoringDomainService
     /**
      * Grade a single answer against its question.
      * Only for MULTIPLE_CHOICE, SEQUENCE, and FREE_TEXT (auto-grading).
-     * TIME_BASED questions use user-provided awarded_score and should not call this method.
+     * TIME_BASED questions with correct_answer can also be auto-graded (探索・符号化).
      */
     public function gradeAnswer(Question $question, Answer $answer): Score
     {
         return match ($question->getQuestionType()) {
             QuestionType::FREE_TEXT                         => $this->gradeFreeText($question, $answer),
             QuestionType::MULTIPLE_CHOICE, QuestionType::SEQUENCE => $this->gradeExact($question, $answer),
-            QuestionType::TIME_BASED                        => throw new LogicException(
-                'TIME_BASED questions should use user-provided awarded_score, not gradeAnswer()'
-            ),
+            QuestionType::TIME_BASED                        => $this->gradeTimeBased($question, $answer),
         };
     }
 
@@ -63,6 +61,23 @@ final class ScoringDomainService
         }
 
         // 類似・語彙問題も選択式と同じ厳密な一致判定を使用
+        return $this->gradeExact($question, $answer);
+    }
+
+    /**
+     * TIME_BASED問題の採点（探索・符号化など）
+     * correct_answerがある場合は自動採点、ない場合は0点（手動採点が必要）
+     */
+    private function gradeTimeBased(Question $question, Answer $answer): Score
+    {
+        $correctAnswer = $question->getCorrectAnswer();
+
+        // 正解が設定されていない場合は手動採点が必要
+        if ($correctAnswer === null) {
+            return Score::zero();
+        }
+
+        // 正解が設定されている場合は自動採点（探索・符号化対応）
         return $this->gradeExact($question, $answer);
     }
 
@@ -108,7 +123,7 @@ final class ScoringDomainService
     /**
      * Calculate pseudo IQ score from percentage.
      * Uses standard IQ distribution: mean=100, SD=15
-     * Maps 0-100% to approximately 55-145 IQ range
+     * Maps 0-100% to approximately 55-120 IQ range
      */
     public function calculatePseudoIQ(float $percentage): int
     {
@@ -117,22 +132,30 @@ final class ScoringDomainService
 
         // 正規分布の逆関数を使用してz-scoreを計算
         // 簡易的な変換: percentage 50% = IQ 100, 各標準偏差ごとに約16.67%
-        // 0% ≈ IQ 55, 50% = IQ 100, 100% ≈ IQ 145
+        // 0% ≈ IQ 55, 50% = IQ 100, 100% ≈ IQ 120
 
         if ($normalized <= 0.0) {
             return 55;
         }
         if ($normalized >= 1.0) {
-            return 145;
+            return 120;
         }
 
         // 線形変換ではなく、より現実的な分布を使用
-        // 50%を基準に、上下それぞれ3標準偏差の範囲をカバー
+        // 50%を基準に、上下それぞれの範囲をカバー（下限-45、上限+20）
         $zScore = $this->percentileToZScore($normalized);
-        $iq = 100 + ($zScore * 15);
+
+        // 非対称な分布を使用
+        if ($zScore >= 0) {
+            // 上側：100〜120（+20ポイント）
+            $iq = 100 + ($zScore * (20.0 / 3.0)); // z=3で120に到達
+        } else {
+            // 下側：55〜100（-45ポイント）
+            $iq = 100 + ($zScore * (45.0 / 3.0)); // z=-3で55に到達
+        }
 
         // IQの範囲を制限
-        return (int) round(max(55, min(145, $iq)));
+        return (int) round(max(55, min(120, $iq)));
     }
 
     /**
@@ -166,8 +189,7 @@ final class ScoringDomainService
     public function interpretIQ(int $iq): string
     {
         return match (true) {
-            $iq >= 130  => '非常に高い（Very Superior）',
-            $iq >= 120  => '高い（Superior）',
+            $iq >= 115  => '高い（Superior）',
             $iq >= 110  => '平均の上（High Average）',
             $iq >= 90   => '平均（Average）',
             $iq >= 80   => '平均の下（Low Average）',

@@ -9,6 +9,9 @@ RUN apk add --no-cache \
     libxml2-dev \
     zip \
     unzip \
+    bash \
+    mysql-client \
+    icu-dev \
     && docker-php-ext-install \
         pdo \
         pdo_mysql \
@@ -16,7 +19,8 @@ RUN apk add --no-cache \
         exif \
         pcntl \
         bcmath \
-        gd
+        gd \
+        intl
 
 # Composer のインストール
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -38,5 +42,8 @@ RUN composer dump-autoload --optimize
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-EXPOSE 9000
-CMD ["php-fpm"]
+# 起動スクリプトをコピー
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=9000"]

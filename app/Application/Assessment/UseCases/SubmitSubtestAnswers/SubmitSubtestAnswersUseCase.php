@@ -79,11 +79,22 @@ final class SubmitSubtestAnswersUseCase
                 throw new DomainException("Question not found: {$answerInput->questionId}");
             }
 
-            if (
+            // TIME_BASEDでもcorrect_answerがある場合は自動採点する（探索・符号化対応）
+            if ($question->getQuestionType() === QuestionType::TIME_BASED && $question->getCorrectAnswer() !== null) {
+                // 自動採点
+                $tempAnswer = new Answer(
+                    questionId: $question->getId(),
+                    assessmentId: $assessmentId,
+                    subtestType: $subtestType,
+                    response: $answerInput->response,
+                    awardedScore: Score::zero(),
+                );
+                $awardedScore = $this->scoringService->gradeAnswer($question, $tempAnswer);
+            } elseif (
                 $question->getQuestionType() === QuestionType::FREE_TEXT
                 || $question->getQuestionType() === QuestionType::TIME_BASED
             ) {
-                // 自由記述 / タイムド系：ユーザー送信のスコアを使用
+                // 自由記述 / タイムド系（正解なし）：ユーザー送信のスコアを使用
                 $awardedScore = new Score(
                     max(0.0, min((float) ($answerInput->awardedScore ?? 0), (float) $question->getMaxPoints()))
                 );
