@@ -87,7 +87,8 @@ export const useAssessmentStore = defineStore('assessment', {
 
         async saveAnswer(subtestType, answer) {
             try {
-                await assessmentApi.saveAnswer(this.assessmentId, subtestType, answer);
+                const response = await assessmentApi.saveAnswer(this.assessmentId, subtestType, answer);
+                return response.data;
             } catch (e) {
                 console.error('Save answer error:', e);
                 if (e.response?.status === 422 && e.response?.data?.error?.includes('Assessment not found')) {

@@ -23,7 +23,7 @@ final class SaveSingleAnswerUseCase
     ) {
     }
 
-    public function execute(SaveSingleAnswerInput $input): void
+    public function execute(SaveSingleAnswerInput $input): ?string
     {
         $assessmentId = new AssessmentId($input->assessmentId);
         $assessment   = $this->assessmentRepository->findById($assessmentId);
@@ -77,5 +77,12 @@ final class SaveSingleAnswerUseCase
         );
 
         $this->assessmentRepository->saveAnswer($answer);
+
+        // FREE_TEXT のみ模範解答を返す（自己採点UI用）
+        if ($question->getQuestionType() === QuestionType::FREE_TEXT) {
+            return $question->getCorrectAnswer();
+        }
+
+        return null;
     }
 }
