@@ -90,6 +90,9 @@ export const useAssessmentStore = defineStore('assessment', {
                 await assessmentApi.saveAnswer(this.assessmentId, subtestType, answer);
             } catch (e) {
                 console.error('Save answer error:', e);
+                if (e.response?.status === 422 && e.response?.data?.error?.includes('Assessment not found')) {
+                    this.reset();
+                }
                 throw e;
             }
         },

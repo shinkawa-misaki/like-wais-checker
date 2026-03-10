@@ -202,7 +202,10 @@ async function onAnswered(answer) {
     try {
         await store.saveAnswer(props.subtestType, answer);
     } catch (e) {
-        store.error = '回答の保存に失敗しました。もう一度お試しください。';
+        const serverMsg = e.response?.data?.error;
+        store.error = serverMsg
+            ? `回答の保存に失敗しました: ${serverMsg}`
+            : '回答の保存に失敗しました。もう一度お試しください。';
         return;
     }
 
@@ -239,6 +242,13 @@ function goNext() {
 }
 
 onMounted(load);
+
+// assessmentId が null になった（セッションリセット）場合はホームへ
+watch(() => store.assessmentId, (id) => {
+    if (!id) {
+        router.push({ name: 'home' });
+    }
+});
 
 // propsの変更を監視して、サブテストが切り替わったら再読み込み
 watch(() => props.subtestType, () => {
