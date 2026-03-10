@@ -11,4 +11,10 @@ interface QuestionRepositoryInterface
 {
     /** @return array<Question> */
     public function findBySubtestType(SubtestType $subtestType): array;
+
+    /**
+     * @param  array<string> $ids
+     * @return array<string, Question> keyed by question UUID
+     */
+    public function findByIds(array $ids): array;
 }

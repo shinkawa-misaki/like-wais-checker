@@ -6,8 +6,8 @@ namespace App\Application\Assessment\UseCases\GenerateReport;
 
 use App\Application\Assessment\DTOs\IndexScoreDto;
 use App\Application\Assessment\DTOs\ReportDto;
+use App\Domain\Assessment\Entities\Answer;
 use App\Domain\Assessment\Repositories\AssessmentRepositoryInterface;
-use App\Domain\Assessment\Repositories\QuestionRepositoryInterface;
 use App\Domain\Assessment\Services\ScoringDomainService;
 use App\Domain\Assessment\ValueObjects\AssessmentId;
 use App\Domain\Assessment\ValueObjects\IndexType;
@@ -20,14 +20,13 @@ final class GenerateReportUseCase
 {
     public function __construct(
         private readonly AssessmentRepositoryInterface $assessmentRepository,
-        private readonly QuestionRepositoryInterface $questionRepository,
         private readonly ScoringDomainService $scoringService,
     ) {
     }
 
     public function execute(string $assessmentId): ReportDto
     {
-        $id = new AssessmentId($assessmentId);
+        $id         = new AssessmentId($assessmentId);
         $assessment = $this->assessmentRepository->findById($id);
 
         if ($assessment === null) {
@@ -38,50 +37,34 @@ final class GenerateReportUseCase
             throw new DomainException('Assessment is not yet completed. Complete all subtests first.');
         }
 
-        // Group answers by subtest question
-        $allAnswers = $assessment->getAnswers();
-        $answersByQuestion = [];
+        // answers を subtest_type でグループ化（question lookup 不要）
+        /** @var array<string, list<Answer>> $answersBySubtest */
+        $answersBySubtest = [];
 
-        foreach ($allAnswers as $answer) {
-            $answersByQuestion[$answer->getQuestionId()->getValue()] = $answer;
+        foreach ($assessment->getAnswers() as $answer) {
+            $answersBySubtest[$answer->getSubtestType()->value][] = $answer;
         }
 
-        // Calculate subtest scores
+        // サブテスト毎のスコアを集計（awarded_score を合算するだけ）
         /** @var array<string, Score> $subtestScores */
         $subtestScores = [];
 
         foreach (SubtestType::orderedList() as $subtestType) {
-            $questions = $this->questionRepository->findBySubtestType($subtestType);
-            $subtestAnswers = [];
-
-            foreach ($questions as $question) {
-                $answer = $answersByQuestion[$question->getId()->getValue()] ?? null;
-
-                if ($answer !== null) {
-                    $subtestAnswers[] = $answer;
-                }
-            }
-
-            $subtestScores[$subtestType->value] = $this->scoringService->calculateSubtestScore(
-                $subtestType,
-                $subtestAnswers,
-                $questions
-            );
+            $subtestAnswers                       = $answersBySubtest[$subtestType->value] ?? [];
+            $subtestScores[$subtestType->value]   = $this->scoringService->calculateSubtestScore($subtestAnswers);
         }
 
-        // Calculate index scores
+        // 指数スコアを計算
         $indexScoreDtos = [];
 
         foreach (IndexType::cases() as $indexType) {
-            $score = $this->scoringService->calculateIndexScore($indexType, $subtestScores);
-            $percentage = $score->toPercentage($indexType->maxScore());
-            $level = $this->scoringService->percentageLevel($percentage);
-
-            // 擬似IQスコアを計算
-            $pseudoIQ = $this->scoringService->calculatePseudoIQ($percentage);
+            $score           = $this->scoringService->calculateIndexScore($indexType, $subtestScores);
+            $percentage      = $score->toPercentage($indexType->maxScore());
+            $level           = $this->scoringService->percentageLevel($percentage);
+            $pseudoIQ        = $this->scoringService->calculatePseudoIQ($percentage);
             $iqInterpretation = $this->scoringService->interpretIQ($pseudoIQ);
 
-            $isStrength = $percentage >= 61;
+            $isStrength    = $percentage >= 61;
             $interpretation = $isStrength
                 ? $indexType->strengthDescription()
                 : $indexType->weaknessDescription();
@@ -99,13 +82,13 @@ final class GenerateReportUseCase
             );
         }
 
-        // Sort by percentage descending for top/bottom identification
+        // パーセンテージ降順でソートして強み / 弱点を抽出
         usort($indexScoreDtos, fn ($a, $b) => $b->percentage <=> $a->percentage);
 
         $strengthIndices = array_slice($indexScoreDtos, 0, 2);
         $weaknessIndices = array_slice(array_reverse($indexScoreDtos), 0, 2);
 
-        // Re-sort in original order for main display
+        // メイン表示用に元の順序でソート
         usort($indexScoreDtos, fn ($a, $b) => strcmp($a->indexType, $b->indexType));
 
         return new ReportDto(
@@ -138,15 +121,15 @@ final class GenerateReportUseCase
         $strategies = [];
 
         foreach ($strengthIndices as $dto) {
-            $indexType = IndexType::from($dto->indexType);
-            $key = "strength_{$dto->indexType}";
-            $strategies[$key] = "【強み: {$indexType->label()}】{$indexType->strengthDescription()}";
+            $indexType            = IndexType::from($dto->indexType);
+            $key                  = "strength_{$dto->indexType}";
+            $strategies[$key]     = "【強み: {$indexType->label()}】{$indexType->strengthDescription()}";
         }
 
         foreach ($weaknessIndices as $dto) {
-            $indexType = IndexType::from($dto->indexType);
-            $key = "weakness_{$dto->indexType}";
-            $strategies[$key] = "【負荷ポイント: {$indexType->label()}】{$indexType->weaknessDescription()}";
+            $indexType            = IndexType::from($dto->indexType);
+            $key                  = "weakness_{$dto->indexType}";
+            $strategies[$key]     = "【負荷ポイント: {$indexType->label()}】{$indexType->weaknessDescription()}";
         }
 
         return $strategies;

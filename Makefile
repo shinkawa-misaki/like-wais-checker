@@ -41,7 +41,7 @@ setup:
 	$(MAKE) migrate
 	$(MAKE) seed
 	$(MAKE) frontend
-	@echo "\n✅ セットアップ完了！ http://localhost:8080 にアクセスしてください"
+	@echo "\n✅ セットアップ完了！ http://localhost:9000 にアクセスしてください"
 
 ## マイグレーションを実行する
 migrate:

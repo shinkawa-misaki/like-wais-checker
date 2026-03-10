@@ -11,6 +11,7 @@ use App\Domain\Assessment\ValueObjects\AssessmentId;
 use App\Domain\Assessment\ValueObjects\AssessmentStatus;
 use App\Domain\Assessment\ValueObjects\QuestionId;
 use App\Domain\Assessment\ValueObjects\Score;
+use App\Domain\Assessment\ValueObjects\SubtestType;
 use App\Infrastructure\Persistence\Eloquent\Models\AnswerModel;
 use App\Infrastructure\Persistence\Eloquent\Models\AssessmentModel;
 use DateTimeImmutable;
@@ -29,28 +30,30 @@ final class EloquentAssessmentRepository implements AssessmentRepositoryInterfac
         ];
 
         AssessmentModel::updateOrCreate(['id' => $data['id']], $data);
-
-        foreach ($assessment->getAnswers() as $answer) {
-            $this->saveAnswer($answer);
-        }
     }
 
-    private function saveAnswer(Answer $answer): void
+    public function saveAnswer(Answer $answer): void
     {
-        AnswerModel::updateOrCreate(
-            [
-                'assessment_id' => $answer->getAssessmentId()->getValue(),
-                'question_id'   => $answer->getQuestionId()->getValue(),
-            ],
-            [
+        $model = AnswerModel::where('assessment_id', $answer->getAssessmentId()->getValue())
+            ->where('question_id', $answer->getQuestionId()->getValue())
+            ->first();
+
+        if ($model !== null) {
+            $model->update([
+                'subtest_type'  => $answer->getSubtestType()->value,
+                'response'      => $answer->getResponse(),
+                'awarded_score' => $answer->getAwardedScore()->getValue(),
+            ]);
+        } else {
+            AnswerModel::create([
                 'id'            => (string) Str::uuid(),
                 'assessment_id' => $answer->getAssessmentId()->getValue(),
                 'question_id'   => $answer->getQuestionId()->getValue(),
+                'subtest_type'  => $answer->getSubtestType()->value,
                 'response'      => $answer->getResponse(),
                 'awarded_score' => $answer->getAwardedScore()->getValue(),
-                'created_at'    => now()->format('Y-m-d H:i:s'),
-            ]
-        );
+            ]);
+        }
     }
 
     public function findById(AssessmentId $id): ?Assessment
@@ -70,6 +73,7 @@ final class EloquentAssessmentRepository implements AssessmentRepositoryInterfac
             fn (AnswerModel $a) => new Answer(
                 questionId: new QuestionId($a->question_id),
                 assessmentId: new AssessmentId($a->assessment_id),
+                subtestType: SubtestType::from($a->subtest_type),
                 response: $a->response,
                 awardedScore: new Score($a->awarded_score),
             )

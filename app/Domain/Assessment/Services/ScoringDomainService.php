@@ -7,24 +7,26 @@ namespace App\Domain\Assessment\Services;
 use App\Domain\Assessment\Entities\Answer;
 use App\Domain\Assessment\Entities\Question;
 use App\Domain\Assessment\ValueObjects\IndexType;
+use App\Domain\Assessment\ValueObjects\QuestionType;
 use App\Domain\Assessment\ValueObjects\Score;
 use App\Domain\Assessment\ValueObjects\SubtestType;
+use LogicException;
 
 final class ScoringDomainService
 {
     /**
      * Grade a single answer against its question.
-     * For FREE_TEXT questions, auto-grading is applied based on content analysis.
-     * For MULTIPLE_CHOICE and SEQUENCE questions, auto-grading is applied.
-     * For TIME_BASED questions (Symbol Search), penalty scoring is applied.
+     * Only for MULTIPLE_CHOICE, SEQUENCE, and FREE_TEXT (auto-grading).
+     * TIME_BASED questions use user-provided awarded_score and should not call this method.
      */
     public function gradeAnswer(Question $question, Answer $answer): Score
     {
         return match ($question->getQuestionType()) {
-            \App\Domain\Assessment\ValueObjects\QuestionType::FREE_TEXT       => $this->gradeFreeText($question, $answer),
-            \App\Domain\Assessment\ValueObjects\QuestionType::MULTIPLE_CHOICE,
-            \App\Domain\Assessment\ValueObjects\QuestionType::SEQUENCE        => $this->gradeExact($question, $answer),
-            \App\Domain\Assessment\ValueObjects\QuestionType::TIME_BASED      => $answer->getAwardedScore(),
+            QuestionType::FREE_TEXT                         => $this->gradeFreeText($question, $answer),
+            QuestionType::MULTIPLE_CHOICE, QuestionType::SEQUENCE => $this->gradeExact($question, $answer),
+            QuestionType::TIME_BASED                        => throw new LogicException(
+                'TIME_BASED questions should use user-provided awarded_score, not gradeAnswer()'
+            ),
         };
     }
 
@@ -65,66 +67,13 @@ final class ScoringDomainService
     }
 
     /**
-     * Calculate symbol search subtest score: correct - (wrong * 0.5), min 0.
+     * Calculate total score for a subtest by summing awarded_score of each answer.
+     * Scores are already persisted in the DB — no re-grading is performed here.
      *
      * @param array<Answer> $answers
-     * @param array<Question> $questions
      */
-    public function calculateSymbolSearchScore(array $answers, array $questions): Score
+    public function calculateSubtestScore(array $answers): Score
     {
-        $correct = 0;
-        $wrong = 0;
-        $questionMap = [];
-
-        foreach ($questions as $question) {
-            $questionMap[$question->getId()->getValue()] = $question;
-        }
-
-        foreach ($answers as $answer) {
-            $question = $questionMap[$answer->getQuestionId()->getValue()] ?? null;
-
-            if ($question === null) {
-                continue;
-            }
-
-            // 未回答（空の回答）はスキップ
-            $response = trim($answer->getResponse());
-            if ($response === '') {
-                continue;
-            }
-
-            $correctAnswer = $question->getCorrectAnswer();
-            if ($correctAnswer === null) {
-                continue;
-            }
-
-            $isCorrect = strtolower($response) === strtolower(trim($correctAnswer));
-
-            if ($isCorrect) {
-                $correct++;
-            } else {
-                $wrong++;
-            }
-        }
-
-        $raw = $correct - ($wrong * 0.5);
-        $final = max(0.0, $raw);
-
-        return new Score($final);
-    }
-
-    /**
-     * Calculate total score for a subtest from its answers.
-     *
-     * @param array<Answer> $answers
-     * @param array<Question> $questions
-     */
-    public function calculateSubtestScore(SubtestType $subtestType, array $answers, array $questions): Score
-    {
-        if ($subtestType === SubtestType::SYMBOL_SEARCH) {
-            return $this->calculateSymbolSearchScore($answers, $questions);
-        }
-
         $total = Score::zero();
 
         foreach ($answers as $answer) {

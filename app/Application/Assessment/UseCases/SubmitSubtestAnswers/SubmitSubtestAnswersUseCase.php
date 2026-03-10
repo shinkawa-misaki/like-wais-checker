@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Application\Assessment\UseCases\SubmitSubtestAnswers;
 
+use App\Application\Assessment\DTOs\AnswerInputDto;
 use App\Application\Assessment\DTOs\AssessmentDto;
 use App\Domain\Assessment\Entities\Answer;
 use App\Domain\Assessment\Repositories\AssessmentRepositoryInterface;
 use App\Domain\Assessment\Repositories\QuestionRepositoryInterface;
 use App\Domain\Assessment\Services\ScoringDomainService;
 use App\Domain\Assessment\ValueObjects\AssessmentId;
-use App\Domain\Assessment\ValueObjects\QuestionId;
+use App\Domain\Assessment\ValueObjects\QuestionType;
 use App\Domain\Assessment\ValueObjects\Score;
 use App\Domain\Assessment\ValueObjects\SubtestType;
 use DomainException;
@@ -27,7 +28,7 @@ final class SubmitSubtestAnswersUseCase
     public function execute(SubmitSubtestAnswersInput $input): AssessmentDto
     {
         $assessmentId = new AssessmentId($input->assessmentId);
-        $assessment = $this->assessmentRepository->findById($assessmentId);
+        $assessment   = $this->assessmentRepository->findById($assessmentId);
 
         if ($assessment === null) {
             throw new DomainException("Assessment not found: {$input->assessmentId}");
@@ -43,64 +44,8 @@ final class SubmitSubtestAnswersUseCase
             throw new DomainException("Subtest {$subtestType->value} is already completed.");
         }
 
-        $questions = $this->questionRepository->findBySubtestType($subtestType);
-        $questionMap = [];
-        $sequenceMap = [];
-
-        foreach ($questions as $question) {
-            $questionMap[$question->getId()->getValue()] = $question;
-            $sequenceMap[$question->getSequenceNumber()] = $question;
-        }
-
-        $validAnswers = 0;
-        $answersWithSequence = [];
-
-        // まず、送信された回答に対応する問題のシーケンス番号を特定
-        foreach ($input->answers as $index => $answerInput) {
-            $answersWithSequence[] = [
-                'input' => $answerInput,
-                'sequence' => $index + 1, // 0-based index to 1-based sequence
-            ];
-        }
-
-        foreach ($answersWithSequence as $answerData) {
-            $answerInput = $answerData['input'];
-            $expectedSequence = $answerData['sequence'];
-
-            // まず、送信された問題IDで検索
-            $question = $questionMap[$answerInput->questionId] ?? null;
-
-            // 問題IDが見つからない場合は、シーケンス番号で照合
-            if ($question === null) {
-                $question = $sequenceMap[$expectedSequence] ?? null;
-
-                if ($question === null) {
-                    // シーケンス番号でも見つからない場合はスキップ
-                    continue;
-                }
-            }
-
-            // Create answer with the correct question ID
-            $answer = new Answer(
-                questionId: $question->getId(), // 正しい問題IDを使用
-                assessmentId: $assessmentId,
-                response: $answerInput->response,
-                awardedScore: Score::zero(),
-            );
-
-            // Auto-grade all answers using the scoring service
-            $gradedScore = $this->scoringService->gradeAnswer($question, $answer);
-            $answer->updateScore($gradedScore);
-
-            $assessment->addAnswer($answer);
-            $validAnswers++;
-        }
-
-        // 有効な回答が1つもない場合はエラー
-        if ($validAnswers === 0 && count($input->answers) > 0) {
-            throw new DomainException(
-                "No valid answers found. Please refresh the page and restart the subtest."
-            );
+        if (count($input->answers) > 0) {
+            $this->saveAnswersToDb($input->answers, $assessmentId, $subtestType);
         }
 
         $assessment->markSubtestCompleted($subtestType);
@@ -112,5 +57,57 @@ final class SubmitSubtestAnswersUseCase
         $this->assessmentRepository->save($assessment);
 
         return AssessmentDto::fromEntity($assessment);
+    }
+
+    /**
+     * 回答を採点してDBへ直接保存する。
+     *
+     * @param array<AnswerInputDto> $answers
+     */
+    private function saveAnswersToDb(
+        array $answers,
+        AssessmentId $assessmentId,
+        SubtestType $subtestType,
+    ): void {
+        $submittedIds = array_map(fn (AnswerInputDto $a) => $a->questionId, $answers);
+        $questionMap  = $this->questionRepository->findByIds($submittedIds);
+
+        foreach ($answers as $answerInput) {
+            $question = $questionMap[$answerInput->questionId] ?? null;
+
+            if ($question === null) {
+                throw new DomainException("Question not found: {$answerInput->questionId}");
+            }
+
+            if (
+                $question->getQuestionType() === QuestionType::FREE_TEXT
+                || $question->getQuestionType() === QuestionType::TIME_BASED
+            ) {
+                // 自由記述 / タイムド系：ユーザー送信のスコアを使用
+                $awardedScore = new Score(
+                    max(0.0, min((float) ($answerInput->awardedScore ?? 0), (float) $question->getMaxPoints()))
+                );
+            } else {
+                // 選択式 / 配列式：自動採点
+                $tempAnswer   = new Answer(
+                    questionId: $question->getId(),
+                    assessmentId: $assessmentId,
+                    subtestType: $subtestType,
+                    response: $answerInput->response,
+                    awardedScore: Score::zero(),
+                );
+                $awardedScore = $this->scoringService->gradeAnswer($question, $tempAnswer);
+            }
+
+            $answer = new Answer(
+                questionId: $question->getId(),
+                assessmentId: $assessmentId,
+                subtestType: $subtestType,
+                response: $answerInput->response,
+                awardedScore: $awardedScore,
+            );
+
+            $this->assessmentRepository->saveAnswer($answer);
+        }
     }
 }

@@ -7,9 +7,12 @@ namespace App\Interfaces\Http\Controllers;
 use App\Application\Assessment\DTOs\AnswerInputDto;
 use App\Application\Assessment\UseCases\GenerateReport\GenerateReportUseCase;
 use App\Application\Assessment\UseCases\GetSubtestQuestions\GetSubtestQuestionsUseCase;
+use App\Application\Assessment\UseCases\SaveSingleAnswer\SaveSingleAnswerInput;
+use App\Application\Assessment\UseCases\SaveSingleAnswer\SaveSingleAnswerUseCase;
 use App\Application\Assessment\UseCases\StartAssessment\StartAssessmentUseCase;
 use App\Application\Assessment\UseCases\SubmitSubtestAnswers\SubmitSubtestAnswersInput;
 use App\Application\Assessment\UseCases\SubmitSubtestAnswers\SubmitSubtestAnswersUseCase;
+use App\Interfaces\Http\Requests\SaveSingleAnswerRequest;
 use App\Interfaces\Http\Requests\SubmitSubtestAnswersRequest;
 use DomainException;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +24,7 @@ final class AssessmentController extends Controller
         private readonly StartAssessmentUseCase $startAssessmentUseCase,
         private readonly GetSubtestQuestionsUseCase $getSubtestQuestionsUseCase,
         private readonly SubmitSubtestAnswersUseCase $submitSubtestAnswersUseCase,
+        private readonly SaveSingleAnswerUseCase $saveSingleAnswerUseCase,
         private readonly GenerateReportUseCase $generateReportUseCase,
     ) {
     }
@@ -57,8 +61,47 @@ final class AssessmentController extends Controller
     }
 
     /**
+     * POST /api/assessments/{assessmentId}/subtests/{subtestType}/answer
+     * 1問ずつ回答を保存する（即座にDBへ永続化）
+     */
+    public function saveAnswer(
+        SaveSingleAnswerRequest $request,
+        string $assessmentId,
+        string $subtestType,
+    ): JsonResponse {
+        try {
+            $input = new SaveSingleAnswerInput(
+                assessmentId: $assessmentId,
+                subtestType: strtoupper($subtestType),
+                questionId: $request->validated('question_id'),
+                response: $request->validated('response') ?? '',
+                awardedScore: $request->validated('awarded_score') !== null
+                    ? (float) $request->validated('awarded_score')
+                    : null,
+            );
+
+            $this->saveSingleAnswerUseCase->execute($input);
+
+            return response()->json([
+                'message' => '回答を保存しました。',
+            ]);
+        } catch (DomainException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\ValueError $e) {
+            return response()->json(['error' => "Invalid subtest type: {$subtestType}"], 422);
+        } catch (\Throwable $e) {
+            \Log::error('saveAnswer error', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+            return response()->json(['error' => '回答の保存中にエラーが発生しました: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * POST /api/assessments/{assessmentId}/subtests/{subtestType}/answers
-     * サブテストの回答を提出する
+     * サブテストの回答を提出する（一括送信 or サブテスト完了マーク）
      */
     public function submitAnswers(
         SubmitSubtestAnswersRequest $request,
@@ -66,13 +109,14 @@ final class AssessmentController extends Controller
         string $subtestType,
     ): JsonResponse {
         try {
+            $rawAnswers = $request->validated('answers') ?? [];
             $answerInputs = array_map(
                 fn (array $a) => new AnswerInputDto(
                     questionId: $a['question_id'],
-                    response: $a['response'] ?? '', // nullの場合は空文字列を使用
+                    response: $a['response'] ?? '',
                     awardedScore: isset($a['awarded_score']) ? (float) $a['awarded_score'] : null,
                 ),
-                $request->validated('answers')
+                $rawAnswers
             );
 
             $input = new SubmitSubtestAnswersInput(

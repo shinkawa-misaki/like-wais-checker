@@ -34,6 +34,22 @@ final class EloquentQuestionRepository implements QuestionRepositoryInterface
         return $questions;
     }
 
+    /**
+     * @param  array<string> $ids
+     * @return array<string, Question> keyed by question UUID
+     */
+    public function findByIds(array $ids): array
+    {
+        $models = QuestionModel::whereIn('id', $ids)->get();
+
+        $questions = [];
+        foreach ($models as $model) {
+            $questions[$model->id] = $this->toDomainEntity($model, $model->sequence_number);
+        }
+
+        return $questions;
+    }
+
     private function toDomainEntity(QuestionModel $model, int $sequenceNumber): Question
     {
         return new Question(

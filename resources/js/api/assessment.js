@@ -21,7 +21,12 @@ export const assessmentApi = {
         return api.get(`/assessments/${assessmentId}/subtests/${subtestType}/questions`);
     },
 
-    /** サブテストの回答を提出する */
+    /** 1問ずつ回答を保存する */
+    saveAnswer(assessmentId, subtestType, answer) {
+        return api.post(`/assessments/${assessmentId}/subtests/${subtestType}/answer`, answer);
+    },
+
+    /** サブテスト完了（一括送信 or 完了マーク） */
     submitAnswers(assessmentId, subtestType, answers, elapsedSeconds = null) {
         return api.post(`/assessments/${assessmentId}/subtests/${subtestType}/answers`, {
             answers,

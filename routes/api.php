@@ -24,6 +24,16 @@ Route::get('/debug-opcache', function () {
     ]);
 });
 
+// 一時: マイグレーション実行（ローカル環境のみ）
+Route::get('/run-migrate', function () {
+    if (! app()->isLocal()) {
+        abort(403);
+    }
+    $output = new \Symfony\Component\Console\Output\BufferedOutput();
+    \Artisan::call('migrate', ['--force' => true], $output);
+    return response()->json(['output' => $output->fetch()]);
+});
+
 Route::prefix('assessments')->group(function (): void {
     // アセスメント開始
     Route::post('/', [AssessmentController::class, 'start'])
@@ -34,7 +44,11 @@ Route::prefix('assessments')->group(function (): void {
         Route::get('subtests/{subtestType}/questions', [AssessmentController::class, 'getQuestions'])
             ->name('assessments.subtests.questions');
 
-        // サブテスト回答提出
+        // 1問ずつ回答保存
+        Route::post('subtests/{subtestType}/answer', [AssessmentController::class, 'saveAnswer'])
+            ->name('assessments.subtests.answer');
+
+        // サブテスト完了（一括送信 or 完了マーク）
         Route::post('subtests/{subtestType}/answers', [AssessmentController::class, 'submitAnswers'])
             ->name('assessments.subtests.answers');
 

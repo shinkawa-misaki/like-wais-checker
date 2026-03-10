@@ -198,22 +198,38 @@ async function load() {
 }
 
 async function onAnswered(answer) {
+    // 1問ずつ即座にDBへ保存
+    try {
+        await store.saveAnswer(props.subtestType, answer);
+    } catch (e) {
+        const serverMsg = e.response?.data?.error;
+        store.error = serverMsg
+            ? `回答の保存に失敗しました: ${serverMsg}`
+            : '回答の保存に失敗しました。もう一度お試しください。';
+        return;
+    }
+
     collectedAnswers.value.push(answer);
     if (currentIndex.value < questions.value.length - 1) {
         currentIndex.value++;
     } else {
-        await submitAll();
+        // 全問回答済み → サブテスト完了マークのみ送信（回答は既にDB保存済み）
+        await completeSubtest();
     }
 }
 
 async function onTimedSubmit({ answers, elapsedSeconds }) {
+    // タイムド系は一括送信（従来通り）
     collectedAnswers.value = answers;
-    await submitAll(elapsedSeconds);
-}
-
-async function submitAll(elapsedSeconds = null) {
     phase.value = 'submitting';
     await store.submitAnswers(props.subtestType, collectedAnswers.value, elapsedSeconds);
+    phase.value = 'done';
+}
+
+async function completeSubtest() {
+    phase.value = 'submitting';
+    // 回答なしで完了マークのみ送信
+    await store.submitAnswers(props.subtestType, [], null);
     phase.value = 'done';
 }
 
@@ -226,6 +242,13 @@ function goNext() {
 }
 
 onMounted(load);
+
+// assessmentId が null になった（セッションリセット）場合はホームへ
+watch(() => store.assessmentId, (id) => {
+    if (!id) {
+        router.push({ name: 'home' });
+    }
+});
 
 // propsの変更を監視して、サブテストが切り替わったら再読み込み
 watch(() => props.subtestType, () => {
