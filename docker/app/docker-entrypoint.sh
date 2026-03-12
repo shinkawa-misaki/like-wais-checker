@@ -7,6 +7,7 @@ echo "=== Starting application ==="
 echo "Waiting for database..."
 max_retries=30
 retries=0
+until php artisan db:show --json > /dev/null 2>&1; do
 until php -r "new PDO('mysql:host='.getenv('DB_HOST').';port='.getenv('DB_PORT').';dbname='.getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD'));" > /dev/null 2>&1; do
     retries=$((retries + 1))
     if [ "$retries" -ge "$max_retries" ]; then
