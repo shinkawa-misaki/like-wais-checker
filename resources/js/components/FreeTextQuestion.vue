@@ -86,13 +86,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps({
     question: { type: Object, required: true },
+    revealedAnswer: { type: String, default: null },
 });
 
-const emit = defineEmits(['answered']);
+const emit = defineEmits(['confirm', 'answered']);
 
 const response = ref('');
 const hasAnswered = ref(false);
@@ -102,6 +103,13 @@ const canSubmit = computed(() => {
     return response.value && response.value.trim().length > 0;
 });
 
+// 親が revealedAnswer をセットしたら採点フェーズへ移行
+watch(() => props.revealedAnswer, (val) => {
+    if (val !== null) {
+        hasAnswered.value = true;
+    }
+});
+
 function submitResponse() {
     const trimmedResponse = response.value.trim();
 
@@ -109,8 +117,12 @@ function submitResponse() {
         return;
     }
 
-    // 回答を確定
-    hasAnswered.value = true;
+    // 回答を確定し、親に保存と模範解答取得を依頼
+    emit('confirm', {
+        question_id: props.question.id,
+        response: trimmedResponse,
+        awarded_score: null,
+    });
 }
 
 function submitGrading() {
@@ -141,10 +153,10 @@ function getScoreLabel(score) {
 }
 
 const hasCorrectAnswerOrHint = computed(() => {
-    return props.question.correctAnswer || props.question.correct_answer || props.question.hint;
+    return props.revealedAnswer || props.question.hint;
 });
 
 const correctAnswerText = computed(() => {
-    return props.question.correctAnswer || props.question.correct_answer || props.question.hint;
+    return props.revealedAnswer || props.question.hint;
 });
 </script>

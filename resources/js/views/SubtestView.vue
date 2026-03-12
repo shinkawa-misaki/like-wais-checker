@@ -91,6 +91,8 @@
             v-if="currentQuestion?.questionType === 'free_text'"
             :key="`question-${currentIndex}`"
             :question="currentQuestion"
+            :revealed-answer="currentCorrectAnswer"
+            @confirm="onConfirmResponse"
             @answered="onAnswered"
           />
           <MatrixReasoningQuestion
@@ -174,6 +176,7 @@ const currentIndex = ref(0);
 const nextSubtest = ref(null);
 
 const currentQuestion = computed(() => questions.value[currentIndex.value] || null);
+const currentCorrectAnswer = ref(null);
 const isTimeBased = computed(() => meta.value?.timeLimitSeconds !== null);
 const subtestProgress = computed(() =>
     questions.value.length > 0
@@ -197,8 +200,21 @@ async function load() {
     phase.value = 'intro';
 }
 
+// FREE_TEXT: 回答確定時に保存して模範解答を取得
+async function onConfirmResponse(answer) {
+    try {
+        const result = await store.saveAnswer(props.subtestType, answer);
+        currentCorrectAnswer.value = result?.correctAnswer ?? '';
+    } catch (e) {
+        const serverMsg = e.response?.data?.error;
+        store.error = serverMsg
+            ? `回答の保存に失敗しました: ${serverMsg}`
+            : '回答の保存に失敗しました。もう一度お試しください。';
+    }
+}
+
 async function onAnswered(answer) {
-    // 1問ずつ即座にDBへ保存
+    // 1問ずつ即座にDBへ保存（FREE_TEXT は採点スコアの更新のみ）
     try {
         await store.saveAnswer(props.subtestType, answer);
     } catch (e) {
@@ -209,6 +225,7 @@ async function onAnswered(answer) {
         return;
     }
 
+    currentCorrectAnswer.value = null;
     collectedAnswers.value.push(answer);
     if (currentIndex.value < questions.value.length - 1) {
         currentIndex.value++;

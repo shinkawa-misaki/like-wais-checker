@@ -340,7 +340,7 @@ Docker Desktop が起動していません。アプリケーションから Dock
 WSL2 環境では `sudo apt install make` でインストールできます。
 PowerShell の場合は「Makeを使わない場合のコマンド」セクションのコマンドを直接実行してください。
 
-### ポート 8080 が使用中
+### ポート ９000 が使用中
 
 `.env` の `APP_URL` と `docker-compose.yml` のポートを変更してください。
 

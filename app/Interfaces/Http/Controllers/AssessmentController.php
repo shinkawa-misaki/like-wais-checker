@@ -80,10 +80,11 @@ final class AssessmentController extends Controller
                     : null,
             );
 
-            $this->saveSingleAnswerUseCase->execute($input);
+            $correctAnswer = $this->saveSingleAnswerUseCase->execute($input);
 
             return response()->json([
-                'message' => '回答を保存しました。',
+                'message'       => '回答を保存しました。',
+                'correctAnswer' => $correctAnswer,
             ]);
         } catch (DomainException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
