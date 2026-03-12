@@ -252,7 +252,7 @@ async function completeSubtest() {
 
 function goNext() {
     if (store.isComplete) {
-        router.push({ name: 'report' });
+        router.push({ name: 'condition-check' });
     } else {
         router.push({ name: 'subtest', params: { subtestType: nextSubtest.value } });
     }

@@ -27,6 +27,7 @@ export const useAssessmentStore = defineStore('assessment', {
     state: () => ({
         assessmentId: sessionStorage.getItem('assessmentId') || null,
         completedSubtests: JSON.parse(sessionStorage.getItem('completedSubtests') || '[]'),
+        condition: JSON.parse(sessionStorage.getItem('condition') || 'null'),
         loading: false,
         error: null,
     }),
@@ -135,7 +136,7 @@ export const useAssessmentStore = defineStore('assessment', {
             this.loading = true;
             this.error = null;
             try {
-                const response = await assessmentApi.getReport(this.assessmentId);
+                const response = await assessmentApi.getReport(this.assessmentId, this.condition);
                 return response.data.data;
             } catch (e) {
                 this.error = 'レポートの取得に失敗しました。';
@@ -145,12 +146,19 @@ export const useAssessmentStore = defineStore('assessment', {
             }
         },
 
+        setCondition(condition) {
+            this.condition = condition;
+            sessionStorage.setItem('condition', JSON.stringify(condition));
+        },
+
         reset() {
             this.assessmentId = null;
             this.completedSubtests = [];
+            this.condition = null;
             this.error = null;
             sessionStorage.removeItem('assessmentId');
             sessionStorage.removeItem('completedSubtests');
+            sessionStorage.removeItem('condition');
         },
     },
 });

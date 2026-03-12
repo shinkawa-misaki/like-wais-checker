@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import DisclaimerView from '../views/DisclaimerView.vue';
 import SubtestView from '../views/SubtestView.vue';
+import ConditionCheckView from '../views/ConditionCheckView.vue';
 import ReportView from '../views/ReportView.vue';
 
 const routes = [
@@ -20,6 +21,11 @@ const routes = [
         name: 'subtest',
         component: SubtestView,
         props: true,
+    },
+    {
+        path: '/condition-check',
+        name: 'condition-check',
+        component: ConditionCheckView,
     },
     {
         path: '/report',

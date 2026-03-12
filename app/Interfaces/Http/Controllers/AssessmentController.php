@@ -16,6 +16,7 @@ use App\Interfaces\Http\Requests\SaveSingleAnswerRequest;
 use App\Interfaces\Http\Requests\SubmitSubtestAnswersRequest;
 use DomainException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 final class AssessmentController extends Controller
@@ -149,12 +150,19 @@ final class AssessmentController extends Controller
 
     /**
      * GET /api/assessments/{assessmentId}/report
-     * 結果レポートを取得する
+     * 結果レポートを取得する（状態チェック: ?sleep=&fatigue=&anxiety=&focus=）
      */
-    public function report(string $assessmentId): JsonResponse
+    public function report(Request $request, string $assessmentId): JsonResponse
     {
         try {
-            $report = $this->generateReportUseCase->execute($assessmentId);
+            $condition = array_filter([
+                'sleep'   => $request->query('sleep'),
+                'fatigue' => $request->query('fatigue'),
+                'anxiety' => $request->query('anxiety'),
+                'focus'   => $request->query('focus'),
+            ]);
+
+            $report = $this->generateReportUseCase->execute($assessmentId, $condition);
 
             return response()->json(['data' => $report]);
         } catch (DomainException $e) {

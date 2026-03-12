@@ -21,6 +21,7 @@ final class ReportDto
         public readonly array $weaknessIndices,
         public readonly array $strategies,
         public readonly array $nextSteps,
+        public readonly ?string $aiAdvice,
         public readonly string $generatedAt,
     ) {
     }

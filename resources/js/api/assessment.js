@@ -34,8 +34,10 @@ export const assessmentApi = {
         });
     },
 
-    /** 結果レポートを取得する */
-    getReport(assessmentId) {
-        return api.get(`/assessments/${assessmentId}/report`);
+    /** 結果レポートを取得する（condition: {sleep, fatigue, anxiety, focus}） */
+    getReport(assessmentId, condition = null) {
+        return api.get(`/assessments/${assessmentId}/report`, {
+            params: condition || {},
+        });
     },
 };

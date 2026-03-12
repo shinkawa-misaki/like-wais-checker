@@ -13,6 +13,7 @@ use App\Domain\Assessment\ValueObjects\AssessmentId;
 use App\Domain\Assessment\ValueObjects\IndexType;
 use App\Domain\Assessment\ValueObjects\Score;
 use App\Domain\Assessment\ValueObjects\SubtestType;
+use App\Services\ClaudeApiService;
 use DateTimeImmutable;
 use DomainException;
 
@@ -21,10 +22,14 @@ final class GenerateReportUseCase
     public function __construct(
         private readonly AssessmentRepositoryInterface $assessmentRepository,
         private readonly ScoringDomainService $scoringService,
+        private readonly ClaudeApiService $claudeApiService,
     ) {
     }
 
-    public function execute(string $assessmentId): ReportDto
+    /**
+     * @param array<string, string> $condition ['sleep' => '十分', 'fatigue' => '低', 'anxiety' => '低', 'focus' => '安定']
+     */
+    public function execute(string $assessmentId, array $condition = []): ReportDto
     {
         $id         = new AssessmentId($assessmentId);
         $assessment = $this->assessmentRepository->findById($id);
@@ -33,11 +38,10 @@ final class GenerateReportUseCase
             throw new DomainException("Assessment not found: {$assessmentId}");
         }
 
-        if (!$assessment->getStatus()->isCompleted()) {
+        if (! $assessment->getStatus()->isCompleted()) {
             throw new DomainException('Assessment is not yet completed. Complete all subtests first.');
         }
 
-        // answers を subtest_type でグループ化（question lookup 不要）
         /** @var array<string, list<Answer>> $answersBySubtest */
         $answersBySubtest = [];
 
@@ -45,31 +49,30 @@ final class GenerateReportUseCase
             $answersBySubtest[$answer->getSubtestType()->value][] = $answer;
         }
 
-        // サブテスト毎のスコアを集計（awarded_score を合算するだけ）
         /** @var array<string, Score> $subtestScores */
         $subtestScores = [];
 
         foreach (SubtestType::orderedList() as $subtestType) {
-            $subtestAnswers                       = $answersBySubtest[$subtestType->value] ?? [];
-            $subtestScores[$subtestType->value]   = $this->scoringService->calculateSubtestScore($subtestAnswers);
+            $subtestAnswers                     = $answersBySubtest[$subtestType->value] ?? [];
+            $subtestScores[$subtestType->value] = $this->scoringService->calculateSubtestScore($subtestAnswers);
         }
 
-        // 指数スコアを計算
+        // 指数スコアを計算（静的解釈で初期化）keyは indexType 文字列
+        /** @var array<string, IndexScoreDto> $indexScoreDtos */
         $indexScoreDtos = [];
 
         foreach (IndexType::cases() as $indexType) {
-            $score           = $this->scoringService->calculateIndexScore($indexType, $subtestScores);
-            $percentage      = $score->toPercentage($indexType->maxScore());
-            $level           = $this->scoringService->percentageLevel($percentage);
-            $pseudoIQ        = $this->scoringService->calculatePseudoIQ($percentage);
+            $score            = $this->scoringService->calculateIndexScore($indexType, $subtestScores);
+            $percentage       = $score->toPercentage($indexType->maxScore());
+            $level            = $this->scoringService->percentageLevel($percentage);
+            $pseudoIQ         = $this->scoringService->calculatePseudoIQ($percentage);
             $iqInterpretation = $this->scoringService->interpretIQ($pseudoIQ);
-
-            $isStrength    = $percentage >= 61;
-            $interpretation = $isStrength
+            $isStrength       = $percentage >= 61;
+            $interpretation   = $isStrength
                 ? $indexType->strengthDescription()
                 : $indexType->weaknessDescription();
 
-            $indexScoreDtos[] = new IndexScoreDto(
+            $indexScoreDtos[$indexType->value] = new IndexScoreDto(
                 indexType: $indexType->value,
                 label: $indexType->label(),
                 rawScore: $score->getValue(),
@@ -83,23 +86,128 @@ final class GenerateReportUseCase
         }
 
         // パーセンテージ降順でソートして強み / 弱点を抽出
-        usort($indexScoreDtos, fn ($a, $b) => $b->percentage <=> $a->percentage);
+        $sorted = array_values($indexScoreDtos);
+        usort($sorted, fn ($a, $b) => $b->percentage <=> $a->percentage);
 
-        $strengthIndices = array_slice($indexScoreDtos, 0, 2);
-        $weaknessIndices = array_slice(array_reverse($indexScoreDtos), 0, 2);
+        $strengthIndices = array_slice($sorted, 0, 2);
+        $weaknessIndices = array_slice(array_reverse($sorted), 0, 2);
 
-        // メイン表示用に元の順序でソート
-        usort($indexScoreDtos, fn ($a, $b) => strcmp($a->indexType, $b->indexType));
+        // Claude API でレポート生成（失敗時は静的フォールバック）
+        $strategies = $this->buildStrategies($strengthIndices, $weaknessIndices);
+        $nextSteps  = $this->buildNextSteps($weaknessIndices);
+        $aiAdvice   = null;
+
+        if (config('services.anthropic.api_key')) {
+            try {
+                [$indexScoreDtos, $strengthIndices, $weaknessIndices, $strategies, $nextSteps, $aiAdvice]
+                    = $this->enrichWithClaude($indexScoreDtos, $strengthIndices, $weaknessIndices, $condition);
+            } catch (\Throwable $e) {
+                \Log::warning('Claude API failed, falling back to static report', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // メイン表示用にアルファベット順でソート
+        $orderedDtos = array_values($indexScoreDtos);
+        usort($orderedDtos, fn ($a, $b) => strcmp($a->indexType, $b->indexType));
 
         return new ReportDto(
             assessmentId: $assessmentId,
             disclaimer: $this->buildDisclaimer(),
-            indexScores: $indexScoreDtos,
+            indexScores: $orderedDtos,
             strengthIndices: $strengthIndices,
             weaknessIndices: $weaknessIndices,
-            strategies: $this->buildStrategies($strengthIndices, $weaknessIndices),
-            nextSteps: $this->buildNextSteps($weaknessIndices),
+            strategies: $strategies,
+            nextSteps: $nextSteps,
+            aiAdvice: $aiAdvice,
             generatedAt: (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+        );
+    }
+
+    /**
+     * @param  array<string, IndexScoreDto> $indexScoreDtos
+     * @param  array<IndexScoreDto>         $strengthIndices
+     * @param  array<IndexScoreDto>         $weaknessIndices
+     * @param  array<string, string>        $condition
+     * @return array{0: array<string, IndexScoreDto>, 1: array<IndexScoreDto>, 2: array<IndexScoreDto>, 3: array<string, string>, 4: array<string>, 5: string|null}
+     */
+    private function enrichWithClaude(
+        array $indexScoreDtos,
+        array $strengthIndices,
+        array $weaknessIndices,
+        array $condition,
+    ): array {
+        $scores = [];
+
+        foreach ($indexScoreDtos as $type => $dto) {
+            $scores[$type] = ['raw' => $dto->rawScore, 'max' => $dto->maxScore, 'pct' => $dto->percentage];
+        }
+
+        $strengthOrder = array_map(
+            fn ($dto) => ['type' => $dto->indexType, 'label' => $dto->label, 'pct' => $dto->percentage],
+            $strengthIndices,
+        );
+
+        $weaknessOrder = array_map(
+            fn ($dto) => ['type' => $dto->indexType, 'label' => $dto->label, 'pct' => $dto->percentage],
+            $weaknessIndices,
+        );
+
+        $resolvedCondition = array_merge(
+            ['sleep' => '不明', 'fatigue' => '不明', 'anxiety' => '不明', 'focus' => '不明'],
+            $condition,
+        );
+
+        $result = $this->claudeApiService->generateReport($scores, $resolvedCondition, $strengthOrder, $weaknessOrder);
+
+        // 強み TOP2 の解釈を Claude の説明で上書き
+        $updatedStrengths = [];
+
+        foreach ($strengthIndices as $i => $dto) {
+            $desc = $result['strength_top2'][$i]['description'] ?? $dto->interpretation;
+            $updated = $this->replaceInterpretation($dto, $desc);
+            $updatedStrengths[] = $updated;
+            $indexScoreDtos[$dto->indexType] = $this->replaceInterpretation($indexScoreDtos[$dto->indexType], $desc);
+        }
+
+        // 弱み TOP2 の解釈を Claude の説明で上書き
+        $updatedWeaknesses = [];
+
+        foreach ($weaknessIndices as $i => $dto) {
+            $desc = $result['weakness_top2'][$i]['description'] ?? $dto->interpretation;
+            $updated = $this->replaceInterpretation($dto, $desc);
+            $updatedWeaknesses[] = $updated;
+            $indexScoreDtos[$dto->indexType] = $this->replaceInterpretation($indexScoreDtos[$dto->indexType], $desc);
+        }
+
+        $strategies = [
+            'work'     => $result['work_strategy']     ?? '',
+            'life'     => $result['life_strategy']     ?? '',
+            'strength' => $result['strength_strategy'] ?? '',
+        ];
+
+        $nextSteps = array_values(array_filter([
+            $result['work_strategy']     ?? null,
+            $result['life_strategy']     ?? null,
+            $result['strength_strategy'] ?? null,
+        ]));
+
+        $aiAdvice = isset($result['ai_advice']) && is_string($result['ai_advice']) ? $result['ai_advice'] : null;
+
+        return [$indexScoreDtos, $updatedStrengths, $updatedWeaknesses, $strategies, $nextSteps, $aiAdvice];
+    }
+
+    private function replaceInterpretation(IndexScoreDto $dto, string $interpretation): IndexScoreDto
+    {
+        return new IndexScoreDto(
+            indexType: $dto->indexType,
+            label: $dto->label,
+            rawScore: $dto->rawScore,
+            maxScore: $dto->maxScore,
+            percentage: $dto->percentage,
+            level: $dto->level,
+            pseudoIQ: $dto->pseudoIQ,
+            iqInterpretation: $dto->iqInterpretation,
+            interpretation: $interpretation,
         );
     }
 
@@ -112,8 +220,8 @@ final class GenerateReportUseCase
     }
 
     /**
-     * @param array<IndexScoreDto> $strengthIndices
-     * @param array<IndexScoreDto> $weaknessIndices
+     * @param  array<IndexScoreDto> $strengthIndices
+     * @param  array<IndexScoreDto> $weaknessIndices
      * @return array<string, string>
      */
     private function buildStrategies(array $strengthIndices, array $weaknessIndices): array
@@ -121,22 +229,20 @@ final class GenerateReportUseCase
         $strategies = [];
 
         foreach ($strengthIndices as $dto) {
-            $indexType            = IndexType::from($dto->indexType);
-            $key                  = "strength_{$dto->indexType}";
-            $strategies[$key]     = "【強み: {$indexType->label()}】{$indexType->strengthDescription()}";
+            $indexType = IndexType::from($dto->indexType);
+            $strategies["strength_{$dto->indexType}"] = "【強み: {$indexType->label()}】{$indexType->strengthDescription()}";
         }
 
         foreach ($weaknessIndices as $dto) {
-            $indexType            = IndexType::from($dto->indexType);
-            $key                  = "weakness_{$dto->indexType}";
-            $strategies[$key]     = "【負荷ポイント: {$indexType->label()}】{$indexType->weaknessDescription()}";
+            $indexType = IndexType::from($dto->indexType);
+            $strategies["weakness_{$dto->indexType}"] = "【負荷ポイント: {$indexType->label()}】{$indexType->weaknessDescription()}";
         }
 
         return $strategies;
     }
 
     /**
-     * @param array<IndexScoreDto> $weaknessIndices
+     * @param  array<IndexScoreDto> $weaknessIndices
      * @return array<string>
      */
     private function buildNextSteps(array $weaknessIndices): array
