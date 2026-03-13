@@ -67,10 +67,7 @@ final class GenerateReportUseCase
             $level            = $this->scoringService->percentageLevel($percentage);
             $pseudoIQ         = $this->scoringService->calculatePseudoIQ($percentage);
             $iqInterpretation = $this->scoringService->interpretIQ($pseudoIQ);
-            $isStrength       = $percentage >= 61;
-            $interpretation   = $isStrength
-                ? $indexType->strengthDescription()
-                : $indexType->weaknessDescription();
+            $interpretation = $indexType->interpretationByLevel($level);
 
             $indexScoreDtos[$indexType->value] = new IndexScoreDto(
                 indexType: $indexType->value,
@@ -226,19 +223,67 @@ final class GenerateReportUseCase
      */
     private function buildStrategies(array $strengthIndices, array $weaknessIndices): array
     {
-        $strategies = [];
+        // 静的フォールバック用: Claude API 未使用時はスコア段階に応じたアドバイスを生成
+        $workParts     = [];
+        $lifeParts     = [];
+        $strengthParts = [];
 
         foreach ($strengthIndices as $dto) {
-            $indexType = IndexType::from($dto->indexType);
-            $strategies["strength_{$dto->indexType}"] = "【強み: {$indexType->label()}】{$indexType->strengthDescription()}";
+            $strengthParts[] = "【{$dto->label} / {$dto->level}】{$dto->interpretation}";
         }
 
         foreach ($weaknessIndices as $dto) {
-            $indexType = IndexType::from($dto->indexType);
-            $strategies["weakness_{$dto->indexType}"] = "【負荷ポイント: {$indexType->label()}】{$indexType->weaknessDescription()}";
+            [$work, $life] = $this->buildWorkLifeAdvice(IndexType::from($dto->indexType), $dto->level);
+            $workParts[]   = $work;
+            $lifeParts[]   = $life;
         }
 
-        return $strategies;
+        return [
+            'work'     => implode(' ', $workParts) ?: '負荷がかかる場面を事前に把握し、余裕を持ったスケジュール設計を心掛けましょう。',
+            'life'     => implode(' ', $lifeParts) ?: '睡眠・食事・運動を整えることで、認知資源の回復を助けられます。',
+            'strength' => implode(' ', $strengthParts) ?: '得意な資源を意識的に使う場面を増やしていきましょう。',
+        ];
+    }
+
+    /** @return array{0: string, 1: string} [仕事のアドバイス, 生活のアドバイス] */
+    private function buildWorkLifeAdvice(IndexType $indexType, string $level): array
+    {
+        $urgent = in_array($level, ['かなり弱い', '弱め'], true);
+
+        return match ($indexType) {
+            IndexType::VCI => [
+                $urgent
+                    ? '指示・会議内容はその場で3行の箇条書きメモに落とし、後で清書する習慣を作りましょう。テンプレートを活用してゼロから書く負担を減らすことが重要です。'
+                    : '言語化の負荷が高い場面では、図解から始めて徐々に言葉に変換する手順を取り入れてみましょう。',
+                $urgent
+                    ? '日記や音声メモなど、気軽に言語を使う機会を日常に組み込み、言語化を「完成品ではなく作業」と捉える練習が助けになります。'
+                    : '読む・書く・話す機会を意識的に増やすことで、言語整理の力を日常的に鍛えられます。',
+            ],
+            IndexType::PRI => [
+                $urgent
+                    ? '複雑なタスクは「条件を1つずつ書き出す→例を探す→1軸ずつ検証する」の手順を必ず踏みましょう。いきなり答えを出そうとせず、プロセスを外に出すことが重要です。'
+                    : '作業前に「型（フレーム）」を作り、パターンを先に決めてから詰める進め方を試してみましょう。',
+                $urgent
+                    ? '情報が多い環境（ニュース・SNS）に一気に触れる時間を減らし、一つのテーマを深く考える時間を確保するとリセットになります。'
+                    : 'パズルやパターン認識ゲームなど、構造を読む練習を日常の中に取り入れると効果的です。',
+            ],
+            IndexType::WMI => [
+                $urgent
+                    ? '「1タスク＝1画面」を徹底し、複数のブラウザタブや作業を同時に開かない環境を作りましょう。途中の気づきはすべてメモに外出しして頭を空ける意識が重要です。'
+                    : 'タスクを小分けにして、こまめにメモを取る習慣を作ると安定感が増します。',
+                $urgent
+                    ? '睡眠を優先することが最大の対策です。ワーキングメモリーは睡眠不足で著しく低下するため、今夜の就寝時間を最優先に設定してください。'
+                    : '十分な睡眠と適度な運動を心掛けると、ワーキングメモリーのパフォーマンスが維持しやすくなります。',
+            ],
+            IndexType::PSI => [
+                $urgent
+                    ? '速度が求められる役割・会議・締切を可能な限り避け、「正確さ優先」を前提に仕事設計を見直しましょう。締切は実際の期日より2〜3日前倒しで自分に設定することが有効です。'
+                    : '締切を細かく小分けにして「今日やること」を絞り込むことで、焦りを減らして安定した作業ができます。',
+                $urgent
+                    ? '急かされる状況（即レス・当日対応）は心身の消耗が大きいため、返信時間のバッファ（例：原則〇時間以内）を周囲と合意しておくことを検討しましょう。'
+                    : '時間を意識した作業（ポモドーロ法など）を練習として取り入れると、時間圧への耐性を徐々に高められます。',
+            ],
+        };
     }
 
     /**
@@ -250,11 +295,28 @@ final class GenerateReportUseCase
         $steps = [];
 
         foreach ($weaknessIndices as $dto) {
+            $level = $dto->level;
             $steps[] = match (IndexType::from($dto->indexType)) {
-                IndexType::VCI => '図→短文→箇条書きの順で考えを外在化する練習を取り入れましょう。',
-                IndexType::PRI => '複雑な問題は1軸ずつ条件を分解して検証する習慣をつけましょう。',
-                IndexType::WMI => 'タスクを小さく分割し、途中メモを活用する環境を整えましょう。',
-                IndexType::PSI => '締切を前倒しで小分けに設定し、速度より正確さを優先する役割配置を検討しましょう。',
+                IndexType::VCI => match ($level) {
+                    'かなり弱い' => '言語化の負荷を下げるため、テンプレート・定型文・音声メモを積極活用し、ゼロから書く機会を減らしましょう。',
+                    '弱め'       => '図解→短文→箇条書きの順で考えを外在化する練習を日常に取り入れましょう。',
+                    default      => '言語整理の機会（議事録・日記など）を意識的に設けると、徐々に負荷が軽くなります。',
+                },
+                IndexType::PRI => match ($level) {
+                    'かなり弱い' => '型やテンプレートを借りることから始め、自分でゼロから構造を作ろうとしないことが最初の一手です。',
+                    '弱め'       => '複雑な問題は1軸ずつ条件を書き出して検証する習慣をつけましょう。',
+                    default      => '作業前にフレーム（型）を先に決める練習を取り入れると、構造理解が安定します。',
+                },
+                IndexType::WMI => match ($level) {
+                    'かなり弱い' => '「覚えない」を前提に、すべてをメモ・ツール・チェックリストに外出しする仕組みを今日から作りましょう。',
+                    '弱め'       => 'タスクを小さく分割し、途中でメモを取る環境を整えましょう。',
+                    default      => '作業の合間にメモを見直す習慣をつけると、情報の取りこぼしが減ります。',
+                },
+                IndexType::PSI => match ($level) {
+                    'かなり弱い' => '速度勝負の役割配置を避け、正確さ優先の環境と十分なバッファを持つ締切設定を優先しましょう。',
+                    '弱め'       => '締切を前倒しで小分けに設定し、速度より正確さを優先する役割配置を検討しましょう。',
+                    default      => '時間を区切った集中作業（ポモドーロ法など）を試すと、効率と安定感のバランスが取りやすくなります。',
+                },
             };
         }
 
