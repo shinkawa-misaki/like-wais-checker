@@ -161,14 +161,14 @@ const timerPercent = computed(() =>
 );
 
 const timerColor = computed(() => {
-    if (remainingSeconds.value <= 15) return 'text-red-600';
-    if (remainingSeconds.value <= 30) return 'text-orange-500';
+    if (remainingSeconds.value <= 10) return 'text-red-600';
+    if (remainingSeconds.value <= 20) return 'text-orange-500';
     return 'text-gray-800';
 });
 
 const timerBarColor = computed(() => {
-    if (remainingSeconds.value <= 15) return 'bg-red-500';
-    if (remainingSeconds.value <= 30) return 'bg-orange-400';
+    if (remainingSeconds.value <= 10) return 'bg-red-500';
+    if (remainingSeconds.value <= 20) return 'bg-orange-400';
     return 'bg-blue-500';
 });
 
