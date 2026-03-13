@@ -120,19 +120,22 @@ final class ScoringDomainService
         // 0% ≈ IQ 55, 50% = IQ 100, 100% ≈ IQ 145
 
         if ($normalized <= 0.0) {
-            return 55;
+            return 48;
         }
         if ($normalized >= 1.0) {
-            return 145;
+            return 138;
         }
 
         // 線形変換ではなく、より現実的な分布を使用
         // 50%を基準に、上下それぞれ3標準偏差の範囲をカバー
         $zScore = $this->percentileToZScore($normalized);
-        $iq = 100 + ($zScore * 15);
 
-        // IQの範囲を制限
-        return (int) round(max(55, min(145, $iq)));
+        // 実測値が約7点高めに出るため校正補正を適用
+        $correction = -7;
+        $iq = 100 + ($zScore * 15) + $correction;
+
+        // IQの範囲を制限（補正後: 下限48, 上限138）
+        return (int) round(max(48, min(138, $iq)));
     }
 
     /**
