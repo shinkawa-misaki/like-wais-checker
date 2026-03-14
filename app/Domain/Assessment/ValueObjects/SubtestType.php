@@ -58,6 +58,15 @@ enum SubtestType: string
         };
     }
 
+    /** 1問あたりの制限時間（秒）。全サブテスト共通で設定。 */
+    public function questionTimeLimitSeconds(): int
+    {
+        return match ($this) {
+            self::SPEED_RESILIENCE => 10, // D は全体タイマー(60s)で管理するが参考値として
+            default                => 30, // A/B/C: 1問30秒
+        };
+    }
+
     public function isTimeBased(): bool
     {
         return $this->timeLimitSeconds() !== null;

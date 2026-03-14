@@ -88,6 +88,7 @@
           <MultipleChoiceQuestion
             :key="`question-${currentIndex}`"
             :question="currentQuestion"
+            :time-limit-seconds="meta?.questionTimeLimitSeconds ?? null"
             @answered="onAnswered"
           />
         </template>

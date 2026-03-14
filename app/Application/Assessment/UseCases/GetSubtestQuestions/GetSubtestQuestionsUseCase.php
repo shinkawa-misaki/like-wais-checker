@@ -25,6 +25,7 @@ final class GetSubtestQuestionsUseCase
      *   subtestLabel: string,
      *   indexType: string,
      *   timeLimitSeconds: int|null,
+     *   questionTimeLimitSeconds: int,
      *   questions: array<QuestionDto>,
      *   instructions: string
      * }
@@ -51,12 +52,13 @@ final class GetSubtestQuestionsUseCase
         );
 
         return [
-            'subtestType'      => $subtestType->value,
-            'subtestLabel'     => $subtestType->label(),
-            'indexType'        => $subtestType->indexType()->value,
-            'timeLimitSeconds' => $subtestType->timeLimitSeconds(),
-            'questions'        => $questionDtos,
-            'instructions'     => $this->buildInstructions($subtestType),
+            'subtestType'             => $subtestType->value,
+            'subtestLabel'            => $subtestType->label(),
+            'indexType'               => $subtestType->indexType()->value,
+            'timeLimitSeconds'        => $subtestType->timeLimitSeconds(),
+            'questionTimeLimitSeconds' => $subtestType->questionTimeLimitSeconds(),
+            'questions'               => $questionDtos,
+            'instructions'            => $this->buildInstructions($subtestType),
         ];
     }
 
@@ -65,13 +67,16 @@ final class GetSubtestQuestionsUseCase
         return match ($subtestType) {
             SubtestType::VERBAL_ORGANIZATION =>
                 '言語的な類推・カテゴリー分類・言い換え・共通点把握の問題です。'
-                . 'A〜Dの選択肢から最も適切なものを1つ選んでください。',
+                . 'A〜Dの選択肢から最も適切なものを1つ選んでください。'
+                . "\n\n⏱️ 1問あたり30秒の制限時間があります。時間内に回答してください。",
             SubtestType::STRUCTURAL_UNDERSTANDING =>
                 '数列や記号列の規則発見・パターン認識・論理的分類の問題です。'
-                . 'A〜Dの選択肢から正解を1つ選んでください。',
+                . 'A〜Dの選択肢から正解を1つ選んでください。'
+                . "\n\n⏱️ 1問あたり30秒の制限時間があります。時間内に回答してください。",
             SubtestType::RETENTION_MANIPULATION =>
                 '頭の中で数を操作したり、情報を保持しながら処理する問題です。'
-                . 'A〜Dの選択肢から正解を1つ選んでください。',
+                . 'A〜Dの選択肢から正解を1つ選んでください。'
+                . "\n\n⏱️ 1問あたり30秒の制限時間があります。時間内に回答してください。",
             SubtestType::SPEED_RESILIENCE =>
                 '【60秒の制限時間】左の記号が右のグループに含まれているか素早く判断してください。'
                 . '○（はい）か×（いいえ）で答えてください。迷ったら飛ばして次へ進んでください。',
