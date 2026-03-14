@@ -22,11 +22,9 @@ final class ScoringDomainService
     public function gradeAnswer(Question $question, Answer $answer): Score
     {
         return match ($question->getQuestionType()) {
-            QuestionType::FREE_TEXT                         => $this->gradeFreeText($question, $answer),
-            QuestionType::MULTIPLE_CHOICE, QuestionType::SEQUENCE => $this->gradeExact($question, $answer),
-            QuestionType::TIME_BASED                        => throw new LogicException(
-                'TIME_BASED questions should use user-provided awarded_score, not gradeAnswer()'
-            ),
+            QuestionType::FREE_TEXT                                        => $this->gradeFreeText($question, $answer),
+            QuestionType::MULTIPLE_CHOICE, QuestionType::SEQUENCE,
+            QuestionType::TIME_BASED                                       => $this->gradeExact($question, $answer),
         };
     }
 
