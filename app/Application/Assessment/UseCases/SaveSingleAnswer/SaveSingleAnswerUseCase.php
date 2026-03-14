@@ -49,11 +49,8 @@ final class SaveSingleAnswerUseCase
             throw new DomainException("Question not found: {$input->questionId}");
         }
 
-        // 採点: FREE_TEXT / TIME_BASED はユーザーの自己採点、それ以外は自動採点
-        if (
-            $question->getQuestionType() === QuestionType::FREE_TEXT
-            || $question->getQuestionType() === QuestionType::TIME_BASED
-        ) {
+        // 採点: TIME_BASED はユーザー提供スコア、それ以外は自動採点
+        if ($question->getQuestionType() === QuestionType::TIME_BASED) {
             $awardedScore = new Score(
                 max(0.0, min((float) ($input->awardedScore ?? 0), (float) $question->getMaxPoints()))
             );
@@ -77,11 +74,6 @@ final class SaveSingleAnswerUseCase
         );
 
         $this->assessmentRepository->saveAnswer($answer);
-
-        // FREE_TEXT のみ模範解答を返す（自己採点UI用）
-        if ($question->getQuestionType() === QuestionType::FREE_TEXT) {
-            return $question->getCorrectAnswer();
-        }
 
         return null;
     }

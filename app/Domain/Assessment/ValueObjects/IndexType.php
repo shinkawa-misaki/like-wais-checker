@@ -26,12 +26,7 @@ enum IndexType: string
 
     public function maxScore(): int
     {
-        return match ($this) {
-            self::VCI => 12, // A: 6問 × 2点
-            self::PRI => 6,  // B: 6問 × 1点
-            self::WMI => 6,  // C: 6問 × 1点
-            self::PSI => 6,  // D: 6問 × 1点
-        };
+        return 6; // 全指数共通: 6問 × 1点
     }
 
     /**

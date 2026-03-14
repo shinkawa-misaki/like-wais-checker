@@ -7,10 +7,10 @@ namespace App\Domain\Assessment\ValueObjects;
 /**
  * 認知の手すりチェック Lite — 4資源モデル
  *
- * A: 言語整理（旧 VCI）  6問 最大12点 (0/1/2)
- * B: 構造理解（旧 PRI）  6問 最大 6点 (0/1)
- * C: 保持操作（旧 WMI）  6問 最大 6点 (0/1)
- * D: 速度耐性（旧 PSI）  6問 最大 6点 (speed_score)
+ * A: 言語整理（旧 VCI）  6問 最大 6点 (0/1)  MULTIPLE_CHOICE
+ * B: 構造理解（旧 PRI）  6問 最大 6点 (0/1)  MULTIPLE_CHOICE
+ * C: 保持操作（旧 WMI）  6問 最大 6点 (0/1)  MULTIPLE_CHOICE
+ * D: 速度耐性（旧 PSI）  6問 最大 6点 (speed_score) TIME_BASED
  */
 enum SubtestType: string
 {
@@ -47,10 +47,7 @@ enum SubtestType: string
 
     public function maxScore(): int
     {
-        return match ($this) {
-            self::VERBAL_ORGANIZATION => 12, // 6問 × 2点
-            default                   => 6,  // 6問 × 1点
-        };
+        return 6; // 全サブテスト共通: 6問 × 1点
     }
 
     public function timeLimitSeconds(): ?int
@@ -69,10 +66,8 @@ enum SubtestType: string
     public function questionType(): QuestionType
     {
         return match ($this) {
-            self::VERBAL_ORGANIZATION      => QuestionType::FREE_TEXT,
-            self::STRUCTURAL_UNDERSTANDING => QuestionType::MULTIPLE_CHOICE,
-            self::RETENTION_MANIPULATION   => QuestionType::SEQUENCE,
-            self::SPEED_RESILIENCE         => QuestionType::TIME_BASED,
+            self::SPEED_RESILIENCE => QuestionType::TIME_BASED,
+            default                => QuestionType::MULTIPLE_CHOICE,
         };
     }
 
