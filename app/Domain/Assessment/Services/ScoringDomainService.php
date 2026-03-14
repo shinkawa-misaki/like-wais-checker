@@ -108,11 +108,11 @@ final class ScoringDomainService
     /**
      * Calculate pseudo IQ score from percentage.
      *
-     * 基準値: 平均90, SD=15
-     *   0%  → z=-3 → IQ≈45 → クランプ → 55
-     *  50%  → z= 0 → IQ=90
-     * 100%  → z=+3 → IQ≈135 → クランプ → 125
-     * 出力範囲: 55〜125（z≒±2.33 でちょうど端点）
+     * 基準値: 平均100, SD=15（標準IQ分布）
+     *   0%  → z=-3 → IQ=55  → クランプ下限
+     *  50%  → z= 0 → IQ=100
+     * 100%  → z=+3 → IQ=145 → クランプ上限 125
+     * 出力範囲: 55〜125
      */
     public function calculatePseudoIQ(float $percentage): int
     {
@@ -127,8 +127,8 @@ final class ScoringDomainService
 
         $zScore = $this->percentileToZScore($normalized);
 
-        // 平均90・SD15 で算出（短時間テストのため一般集団より低めに設定）
-        $iq = 90 + ($zScore * 15);
+        // 標準IQ: 平均100・SD15
+        $iq = 100 + ($zScore * 15);
 
         return (int) round(max(55, min(125, $iq)));
     }

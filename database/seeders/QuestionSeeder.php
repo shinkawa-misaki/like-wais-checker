@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Infrastructure\Persistence\Eloquent\Models\QuestionModel;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -21,7 +22,10 @@ class QuestionSeeder extends Seeder
 {
     public function run(): void
     {
+        // answers.question_id → questions.id の外部キー制約を一時無効化してから削除
+        Schema::disableForeignKeyConstraints();
         QuestionModel::query()->delete();
+        Schema::enableForeignKeyConstraints();
 
         $this->seedVerbalOrganization();
         $this->seedStructuralUnderstanding();
