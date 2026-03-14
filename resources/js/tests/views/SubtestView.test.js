@@ -9,7 +9,7 @@ vi.mock('@/api/assessment.js');
 
 const mockQuestions = {
     subtestType: 'A',
-    subtestLabel: '類似 (Similarities)',
+    subtestLabel: '言語整理',
     indexType: 'VCI',
     instructions: 'テスト用の説明文',
     timeLimitSeconds: null,
@@ -33,9 +33,9 @@ function makeWrapper(subtestType = 'A', storeOverrides = {}) {
                 props: true,
             },
             {
-                path: '/report',
-                name: 'report',
-                component: { template: '<div>Report</div>' },
+                path: '/condition-check',
+                name: 'condition-check',
+                component: { template: '<div>ConditionCheck</div>' },
             },
         ],
     });
@@ -82,7 +82,6 @@ describe('SubtestView', () => {
     describe('初期表示', () => {
         it('ローディング状態を表示する', () => {
             const { wrapper } = makeWrapper();
-            // ローディング中またはヘッダーが表示される
             expect(wrapper.find('header').exists() || wrapper.text().includes('読み込み中...')).toBe(true);
         });
 
@@ -95,7 +94,7 @@ describe('SubtestView', () => {
         it('案内画面を表示する', async () => {
             const { wrapper } = makeWrapper();
             await flushPromises();
-            expect(wrapper.text()).toContain('類似 (Similarities)');
+            expect(wrapper.text()).toContain('言語整理');
             expect(wrapper.text()).toContain('📋 実施方法');
             expect(wrapper.text()).toContain('開始する');
         });
@@ -113,22 +112,19 @@ describe('SubtestView', () => {
             const { wrapper, store, router } = makeWrapper('A');
             await flushPromises();
 
-            // 最初のサブテストが読み込まれる
             expect(store.fetchQuestions).toHaveBeenCalledWith('A');
             expect(store.fetchQuestions).toHaveBeenCalledTimes(1);
 
-            // サブテストBに切り替え
             store.fetchQuestions.mockResolvedValue({
                 ...mockQuestions,
                 subtestType: 'B',
-                subtestLabel: '語彙 (Vocabulary)',
+                subtestLabel: '構造理解',
             });
 
             await router.push({ name: 'subtest', params: { subtestType: 'B' } });
             await wrapper.setProps({ subtestType: 'B' });
             await flushPromises();
 
-            // 再読み込みされる
             expect(store.fetchQuestions).toHaveBeenCalledWith('B');
             expect(store.fetchQuestions).toHaveBeenCalledTimes(2);
         });
@@ -137,12 +133,10 @@ describe('SubtestView', () => {
             const { wrapper, store, router } = makeWrapper('A');
             await flushPromises();
 
-            // 問題を開始
             const startButton = wrapper.find('button');
             await startButton.trigger('click');
             await flushPromises();
 
-            // サブテストBに切り替え
             store.fetchQuestions.mockResolvedValue({
                 ...mockQuestions,
                 subtestType: 'B',
@@ -152,7 +146,6 @@ describe('SubtestView', () => {
             await wrapper.setProps({ subtestType: 'B' });
             await flushPromises();
 
-            // 案内画面に戻っている
             expect(wrapper.text()).toContain('開始する');
         });
     });
@@ -166,7 +159,6 @@ describe('SubtestView', () => {
             await startButton.trigger('click');
             await flushPromises();
 
-            // 問題コンポーネントが表示される
             expect(wrapper.html()).toContain('stub-free-text');
         });
     });
@@ -178,12 +170,10 @@ describe('SubtestView', () => {
             });
             await flushPromises();
 
-            // submitAnswersをモックして完了状態にする
             store.submitAnswers.mockResolvedValue({
                 completedSubtests: ['A'],
             });
 
-            // 手動で完了フェーズに移行
             wrapper.vm.phase = 'done';
             await flushPromises();
 
@@ -192,12 +182,11 @@ describe('SubtestView', () => {
         });
 
         it('全サブテスト完了後は「結果を見る」ボタンを表示する', async () => {
-            const { wrapper, store } = makeWrapper('H', {
-                completedSubtests: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+            const { wrapper, store } = makeWrapper('D', {
+                completedSubtests: ['A', 'B', 'C', 'D'],
             });
             await flushPromises();
 
-            // 完了フェーズに移行
             wrapper.vm.phase = 'done';
             await flushPromises();
 
@@ -211,7 +200,6 @@ describe('SubtestView', () => {
             });
             await flushPromises();
 
-            // 次のサブテストを設定
             wrapper.vm.nextSubtest = 'B';
             wrapper.vm.phase = 'done';
             await flushPromises();
@@ -232,9 +220,9 @@ describe('SubtestView', () => {
             }
         });
 
-        it('「結果を見る」ボタンでレポート画面に遷移する', async () => {
-            const { wrapper, store, router } = makeWrapper('H', {
-                completedSubtests: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+        it('「結果を見る」ボタンでコンディションチェック画面に遷移する', async () => {
+            const { wrapper, store, router } = makeWrapper('D', {
+                completedSubtests: ['A', 'B', 'C', 'D'],
             });
             await flushPromises();
 
@@ -251,7 +239,7 @@ describe('SubtestView', () => {
                 await flushPromises();
 
                 expect(pushSpy).toHaveBeenCalledWith({
-                    name: 'report',
+                    name: 'condition-check',
                 });
             }
         });
@@ -270,13 +258,13 @@ describe('SubtestView', () => {
     });
 
     describe('プログレス表示', () => {
-        it('サブテストの進捗が表示される', async () => {
+        it('セクションの進捗が表示される', async () => {
             const { wrapper } = makeWrapper('A', {
                 completedSubtests: ['A', 'B'],
             });
             await flushPromises();
 
-            expect(wrapper.text()).toContain('サブテスト 3/8');
+            expect(wrapper.text()).toContain('セクション 3/4');
         });
     });
 });

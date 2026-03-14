@@ -25,7 +25,7 @@
         </div>
         <!-- 全体進捗 -->
         <div class="text-xs text-gray-400 whitespace-nowrap">
-          サブテスト {{ store.completedSubtests.length + 1 }}/8
+          セクション {{ store.completedSubtests.length + 1 }}/4
         </div>
       </div>
     </header>
@@ -95,12 +95,6 @@
             @confirm="onConfirmResponse"
             @answered="onAnswered"
           />
-          <MatrixReasoningQuestion
-            v-else-if="subtestType === 'D'"
-            :key="`question-${currentIndex}`"
-            :question="currentQuestion"
-            @answered="onAnswered"
-          />
           <MultipleChoiceQuestion
             v-else-if="currentQuestion?.questionType === 'multiple_choice'"
             :key="`question-${currentIndex}`"
@@ -127,7 +121,7 @@
           <h2 class="text-xl font-bold text-gray-900">{{ meta?.subtestLabel }}　完了！</h2>
 
           <div v-if="!store.isComplete" class="bg-white rounded-xl border border-gray-200 p-5">
-            <p class="text-sm text-gray-600 mb-4">次のサブテストへ進んでください</p>
+            <p class="text-sm text-gray-600 mb-4">次のセクションへ進んでください</p>
             <div class="flex items-center gap-3 text-left">
               <div class="text-3xl">{{ SUBTEST_META[nextSubtest]?.icon }}</div>
               <div>
@@ -157,7 +151,6 @@ import { useRouter } from 'vue-router';
 import { useAssessmentStore, SUBTEST_ORDER, SUBTEST_META } from '../stores/assessment.js';
 import FreeTextQuestion from '../components/FreeTextQuestion.vue';
 import MultipleChoiceQuestion from '../components/MultipleChoiceQuestion.vue';
-import MatrixReasoningQuestion from '../components/MatrixReasoningQuestion.vue';
 import SequenceQuestion from '../components/SequenceQuestion.vue';
 import TimedSubtest from '../components/TimedSubtest.vue';
 

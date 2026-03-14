@@ -5,9 +5,9 @@
       <!-- ロゴ / タイトル -->
       <div>
         <div class="text-6xl mb-4">🧠</div>
-        <h1 class="text-3xl font-bold text-gray-900">WAIS風 4指数ミニチェック</h1>
+        <h1 class="text-3xl font-bold text-gray-900">認知の手すりチェック Lite</h1>
         <p class="mt-3 text-gray-500 text-sm">
-          言語理解・知覚推理・ワーキングメモリー・処理速度の4つの傾向を測るミニ検査です
+          言語整理・構造理解・保持操作・速度耐性の4つの認知資源を確認するチェックです
         </p>
       </div>
 
@@ -31,11 +31,11 @@
       <div class="bg-blue-50 rounded-xl p-4 text-sm text-blue-800 text-left space-y-1">
         <div class="flex items-center gap-2">
           <span>⏱️</span>
-          <span>所要時間：30〜40分</span>
+          <span>所要時間：10〜20分</span>
         </div>
         <div class="flex items-center gap-2">
           <span>📝</span>
-          <span>8サブテスト・134問</span>
+          <span>4セクション・24問</span>
         </div>
         <div class="flex items-center gap-2">
           <span>📵</span>
@@ -77,10 +77,10 @@ const router = useRouter();
 const store = useAssessmentStore();
 
 const indices = [
-    { key: 'VCI', label: '言語理解', icon: '🔤', desc: '抽象化・言語化・説明力' },
-    { key: 'PRI', label: '知覚推理', icon: '🔲', desc: '規則発見・構造把握・枠組み作り' },
-    { key: 'WMI', label: 'ワーキングメモリー', icon: '🧠', desc: '情報保持・同時処理' },
-    { key: 'PSI', label: '処理速度', icon: '⚡', desc: '素早い情報処理・切替の速さ' },
+    { key: 'VCI', label: '言語整理', icon: '🔤', desc: '要点をつかむ・言い換える・輪郭を作る' },
+    { key: 'PRI', label: '構造理解', icon: '🔲', desc: '規則発見・分類・手順や型を読む' },
+    { key: 'WMI', label: '保持操作', icon: '🧠', desc: '情報を保持しながら並べ替え・条件を扱う' },
+    { key: 'PSI', label: '速度耐性', icon: '⚡', desc: '時間圧の中で処理を進める・焦りに崩れにくい' },
 ];
 
 const hasSavedSession = computed(() =>

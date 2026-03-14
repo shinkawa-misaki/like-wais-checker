@@ -4,75 +4,60 @@ declare(strict_types=1);
 
 namespace App\Domain\Assessment\ValueObjects;
 
+/**
+ * 認知の手すりチェック Lite — 4資源モデル
+ *
+ * A: 言語整理（旧 VCI）  6問 最大12点 (0/1/2)
+ * B: 構造理解（旧 PRI）  6問 最大 6点 (0/1)
+ * C: 保持操作（旧 WMI）  6問 最大 6点 (0/1)
+ * D: 速度耐性（旧 PSI）  6問 最大 6点 (speed_score)
+ */
 enum SubtestType: string
 {
-    case SIMILARITIES        = 'A'; // 類似 (VCI)
-    case VOCABULARY          = 'B'; // 語彙 (VCI)
-    case PATTERN_RECOGNITION = 'C'; // 規則発見 (PRI)
-    case MATRIX_REASONING    = 'D'; // 簡易マトリクス (PRI)
-    case DIGIT_SPAN          = 'E'; // 数唱 (WMI)
-    case ARITHMETIC          = 'F'; // 暗算 (WMI)
-    case SYMBOL_SEARCH       = 'G'; // 探索 (PSI)
-    case CODING              = 'H'; // 符号化 (PSI)
+    case VERBAL_ORGANIZATION        = 'A'; // 言語整理
+    case STRUCTURAL_UNDERSTANDING   = 'B'; // 構造理解
+    case RETENTION_MANIPULATION     = 'C'; // 保持操作
+    case SPEED_RESILIENCE           = 'D'; // 速度耐性
 
     public function label(): string
     {
         return match ($this) {
-            self::SIMILARITIES        => '類似 (Similarities)',
-            self::VOCABULARY          => '語彙 (Vocabulary)',
-            self::PATTERN_RECOGNITION => '規則発見 (Pattern Recognition)',
-            self::MATRIX_REASONING    => '簡易マトリクス (Matrix Reasoning)',
-            self::DIGIT_SPAN          => '数唱 (Digit Span)',
-            self::ARITHMETIC          => '暗算 (Arithmetic)',
-            self::SYMBOL_SEARCH       => '探索 (Symbol Search)',
-            self::CODING              => '符号化 (Coding)',
+            self::VERBAL_ORGANIZATION      => '言語整理',
+            self::STRUCTURAL_UNDERSTANDING => '構造理解',
+            self::RETENTION_MANIPULATION   => '保持操作',
+            self::SPEED_RESILIENCE         => '速度耐性',
         };
     }
 
     public function indexType(): IndexType
     {
         return match ($this) {
-            self::SIMILARITIES, self::VOCABULARY          => IndexType::VCI,
-            self::PATTERN_RECOGNITION, self::MATRIX_REASONING => IndexType::PRI,
-            self::DIGIT_SPAN, self::ARITHMETIC            => IndexType::WMI,
-            self::SYMBOL_SEARCH, self::CODING             => IndexType::PSI,
+            self::VERBAL_ORGANIZATION      => IndexType::VCI,
+            self::STRUCTURAL_UNDERSTANDING => IndexType::PRI,
+            self::RETENTION_MANIPULATION   => IndexType::WMI,
+            self::SPEED_RESILIENCE         => IndexType::PSI,
         };
     }
 
+    /** 1回のテストで出題する問題数 */
     public function questionCount(): int
     {
-        return match ($this) {
-            self::SIMILARITIES        => 10,
-            self::VOCABULARY          => 10,
-            self::PATTERN_RECOGNITION => 12,
-            self::MATRIX_REASONING    => 10,
-            self::DIGIT_SPAN          => 18,
-            self::ARITHMETIC          => 10,
-            self::SYMBOL_SEARCH       => 24,
-            self::CODING              => 60,
-        };
+        return 6;
     }
 
     public function maxScore(): int
     {
         return match ($this) {
-            self::SIMILARITIES        => 20, // 2点 × 10問
-            self::VOCABULARY          => 20, // 2点 × 10問
-            self::PATTERN_RECOGNITION => 12, // 1点 × 12問
-            self::MATRIX_REASONING    => 10, // 1点 × 10問
-            self::DIGIT_SPAN          => 18, // 1点 × 18系列
-            self::ARITHMETIC          => 10, // 1点 × 10問
-            self::SYMBOL_SEARCH       => 24, // 正答数 - (誤答×0.5)
-            self::CODING              => 60, // 正答数
+            self::VERBAL_ORGANIZATION => 12, // 6問 × 2点
+            default                   => 6,  // 6問 × 1点
         };
     }
 
     public function timeLimitSeconds(): ?int
     {
         return match ($this) {
-            self::SYMBOL_SEARCH => 90,
-            self::CODING        => 90,
-            default             => null,
+            self::SPEED_RESILIENCE => 60,
+            default                => null,
         };
     }
 
@@ -84,10 +69,10 @@ enum SubtestType: string
     public function questionType(): QuestionType
     {
         return match ($this) {
-            self::SIMILARITIES, self::VOCABULARY => QuestionType::FREE_TEXT,
-            self::PATTERN_RECOGNITION, self::MATRIX_REASONING, self::ARITHMETIC => QuestionType::MULTIPLE_CHOICE,
-            self::DIGIT_SPAN   => QuestionType::SEQUENCE,
-            self::SYMBOL_SEARCH, self::CODING => QuestionType::TIME_BASED,
+            self::VERBAL_ORGANIZATION      => QuestionType::FREE_TEXT,
+            self::STRUCTURAL_UNDERSTANDING => QuestionType::MULTIPLE_CHOICE,
+            self::RETENTION_MANIPULATION   => QuestionType::SEQUENCE,
+            self::SPEED_RESILIENCE         => QuestionType::TIME_BASED,
         };
     }
 
@@ -95,14 +80,10 @@ enum SubtestType: string
     public static function orderedList(): array
     {
         return [
-            self::SIMILARITIES,
-            self::VOCABULARY,
-            self::PATTERN_RECOGNITION,
-            self::MATRIX_REASONING,
-            self::DIGIT_SPAN,
-            self::ARITHMETIC,
-            self::SYMBOL_SEARCH,
-            self::CODING,
+            self::VERBAL_ORGANIZATION,
+            self::STRUCTURAL_UNDERSTANDING,
+            self::RETENTION_MANIPULATION,
+            self::SPEED_RESILIENCE,
         ];
     }
 }

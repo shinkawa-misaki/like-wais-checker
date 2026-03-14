@@ -1,26 +1,22 @@
 import { defineStore } from 'pinia';
 import { assessmentApi } from '../api/assessment.js';
 
-/** サブテストの実施順 */
-export const SUBTEST_ORDER = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+/** セクション実施順（4資源モデル） */
+export const SUBTEST_ORDER = ['A', 'B', 'C', 'D'];
 
-/** サブテストのメタ情報 */
+/** セクションのメタ情報 */
 export const SUBTEST_META = {
-    A: { label: '類似（Similarities）', index: 'VCI', icon: '🔤' },
-    B: { label: '語彙（Vocabulary）', index: 'VCI', icon: '📖' },
-    C: { label: '規則発見（Pattern Recognition）', index: 'PRI', icon: '🔢' },
-    D: { label: '簡易マトリクス（Matrix Reasoning）', index: 'PRI', icon: '🔲' },
-    E: { label: '数唱（Digit Span）', index: 'WMI', icon: '🔢' },
-    F: { label: '暗算（Arithmetic）', index: 'WMI', icon: '🧮' },
-    G: { label: '探索（Symbol Search）', index: 'PSI', icon: '🔍' },
-    H: { label: '符号化（Coding）', index: 'PSI', icon: '⌨️' },
+    A: { label: '言語整理', index: 'VCI', icon: '🔤' },
+    B: { label: '構造理解', index: 'PRI', icon: '🔲' },
+    C: { label: '保持操作', index: 'WMI', icon: '🧠' },
+    D: { label: '速度耐性', index: 'PSI', icon: '⚡' },
 };
 
 export const INDEX_META = {
-    VCI: { label: '言語理解', color: 'blue', subtests: ['A', 'B'] },
-    PRI: { label: '知覚推理', color: 'green', subtests: ['C', 'D'] },
-    WMI: { label: 'ワーキングメモリー', color: 'purple', subtests: ['E', 'F'] },
-    PSI: { label: '処理速度', color: 'orange', subtests: ['G', 'H'] },
+    VCI: { label: '言語整理', color: 'blue', subtests: ['A'] },
+    PRI: { label: '構造理解', color: 'green', subtests: ['B'] },
+    WMI: { label: '保持操作', color: 'purple', subtests: ['C'] },
+    PSI: { label: '速度耐性', color: 'orange', subtests: ['D'] },
 };
 
 export const useAssessmentStore = defineStore('assessment', {

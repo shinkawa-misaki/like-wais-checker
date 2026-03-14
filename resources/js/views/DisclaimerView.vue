@@ -90,7 +90,7 @@ const checklist = ref([
     { id: 'quiet', label: '静かな場所にいる', checked: false },
     { id: 'nodic', label: '検索・辞書・電卓を使わないことに同意する', checked: false },
     { id: 'health', label: '体調は問題ない（睡眠・疲労など）', checked: false },
-    { id: 'time', label: '15~20分の時間を確保した', checked: false },
+    { id: 'time', label: '10〜20分の時間を確保した', checked: false },
 ]);
 
 const allChecked = computed(() => checklist.value.every(item => item.checked));

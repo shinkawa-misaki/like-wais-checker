@@ -1,23 +1,6 @@
 <template>
   <div class="space-y-4">
 
-    <!-- 符号化問題の対応表を常に表示 -->
-    <div v-if="subtestType === 'H' && questions.length > 0 && questions[0].options"
-         class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-300 p-5 sticky top-0 z-10 shadow-lg">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-lg">📋</span>
-        <h3 class="text-sm font-bold text-indigo-900">対応表（この表を参照して回答してください）</h3>
-      </div>
-      <div class="grid grid-cols-5 gap-2">
-        <div v-for="(symbol, digit) in questions[0].options" :key="digit"
-             class="bg-white rounded-lg p-3 text-center border-2 border-indigo-200 shadow-sm">
-          <div class="text-lg font-bold text-gray-800">{{ digit }}</div>
-          <div class="text-xs text-gray-500 my-1">↓</div>
-          <div class="text-2xl font-bold text-indigo-600">{{ symbol }}</div>
-        </div>
-      </div>
-    </div>
-
     <!-- タイマーバー -->
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <div class="flex items-center justify-between mb-2">
@@ -58,53 +41,27 @@
             <span class="text-xs font-bold text-gray-400 pt-0.5 shrink-0">{{ i + 1 }}.</span>
             <div class="flex-1">
               <p class="text-sm text-gray-700 whitespace-pre-line mb-2">{{ q.content }}</p>
-              <!-- Symbol Search: ○×ボタン -->
-              <template v-if="q.questionType === 'time_based' && subtestType === 'G'">
-                <div class="flex gap-2">
-                  <button
-                    @click="setAnswer(q.id, '○')"
-                    :class="[
-                      'flex-1 py-2 rounded-lg border-2 text-sm font-bold transition-all',
-                      answers[q.id] === '○'
-                        ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-gray-200 text-gray-600'
-                    ]"
-                  >○ あり</button>
-                  <button
-                    @click="setAnswer(q.id, '×')"
-                    :class="[
-                      'flex-1 py-2 rounded-lg border-2 text-sm font-bold transition-all',
-                      answers[q.id] === '×'
-                        ? 'border-red-500 bg-red-50 text-red-700'
-                        : 'border-gray-200 text-gray-600'
-                    ]"
-                  >× なし</button>
-                </div>
-              </template>
-              <!-- Coding: 文字入力 -->
-              <template v-else-if="subtestType === 'H'">
-                <input
-                  :value="answers[q.id] || ''"
-                  @input="setAnswer(q.id, $event.target.value.toUpperCase())"
-                  type="text"
-                  maxlength="1"
-                  placeholder="A〜J"
-                  class="w-20 border-2 border-gray-300 rounded-lg p-2 text-center text-lg font-bold
-                         focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 uppercase"
-                >
-              </template>
-              <!-- その他の時間制限問題 -->
-              <template v-else>
-                <input
-                  :value="answers[q.id] || ''"
-                  @input="setAnswer(q.id, $event.target.value.toUpperCase())"
-                  type="text"
-                  maxlength="1"
-                  placeholder="回答"
-                  class="w-16 border border-gray-300 rounded-lg p-2 text-center text-sm
-                         focus:outline-none focus:ring-2 focus:ring-blue-400 uppercase"
-                >
-              </template>
+              <!-- 速度耐性: ○×ボタン -->
+              <div class="flex gap-2">
+                <button
+                  @click="setAnswer(q.id, '○')"
+                  :class="[
+                    'flex-1 py-2 rounded-lg border-2 text-sm font-bold transition-all',
+                    answers[q.id] === '○'
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-gray-200 text-gray-600'
+                  ]"
+                >○ はい</button>
+                <button
+                  @click="setAnswer(q.id, '×')"
+                  :class="[
+                    'flex-1 py-2 rounded-lg border-2 text-sm font-bold transition-all',
+                    answers[q.id] === '×'
+                      ? 'border-red-500 bg-red-50 text-red-700'
+                      : 'border-gray-200 text-gray-600'
+                  ]"
+                >× いいえ</button>
+              </div>
             </div>
           </div>
         </div>
