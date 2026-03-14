@@ -107,35 +107,30 @@ final class ScoringDomainService
 
     /**
      * Calculate pseudo IQ score from percentage.
-     * Uses standard IQ distribution: mean=100, SD=15
-     * Maps 0-100% to approximately 55-145 IQ range
+     *
+     * 基準値: 平均90, SD=15
+     *   0%  → z=-3 → IQ≈45 → クランプ → 55
+     *  50%  → z= 0 → IQ=90
+     * 100%  → z=+3 → IQ≈135 → クランプ → 125
+     * 出力範囲: 55〜125（z≒±2.33 でちょうど端点）
      */
     public function calculatePseudoIQ(float $percentage): int
     {
-        // パーセンテージを0-1の範囲に正規化
         $normalized = $percentage / 100.0;
 
-        // 正規分布の逆関数を使用してz-scoreを計算
-        // 簡易的な変換: percentage 50% = IQ 100, 各標準偏差ごとに約16.67%
-        // 0% ≈ IQ 55, 50% = IQ 100, 100% ≈ IQ 145
-
         if ($normalized <= 0.0) {
-            return 48;
+            return 55;
         }
         if ($normalized >= 1.0) {
-            return 138;
+            return 125;
         }
 
-        // 線形変換ではなく、より現実的な分布を使用
-        // 50%を基準に、上下それぞれ3標準偏差の範囲をカバー
         $zScore = $this->percentileToZScore($normalized);
 
-        // 実測値が約7点高めに出るため校正補正を適用
-        $correction = -7;
-        $iq = 100 + ($zScore * 15) + $correction;
+        // 平均90・SD15 で算出（短時間テストのため一般集団より低めに設定）
+        $iq = 90 + ($zScore * 15);
 
-        // IQの範囲を制限（補正後: 下限48, 上限138）
-        return (int) round(max(48, min(138, $iq)));
+        return (int) round(max(55, min(125, $iq)));
     }
 
     /**
@@ -166,16 +161,17 @@ final class ScoringDomainService
         return 3.0;
     }
 
+    /**
+     * IQ水準の文字解釈（出力範囲 55〜125 に合わせた5段階）
+     */
     public function interpretIQ(int $iq): string
     {
         return match (true) {
-            $iq >= 130  => '非常に高い（Very Superior）',
             $iq >= 120  => '高い（Superior）',
             $iq >= 110  => '平均の上（High Average）',
             $iq >= 90   => '平均（Average）',
-            $iq >= 80   => '平均の下（Low Average）',
-            $iq >= 70   => '境界域（Borderline）',
-            default     => '低い（Extremely Low）',
+            $iq >= 75   => '平均の下（Low Average）',
+            default     => '低め（Borderline）',
         };
     }
 
