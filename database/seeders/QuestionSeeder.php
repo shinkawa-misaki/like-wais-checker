@@ -13,9 +13,9 @@ use Illuminate\Support\Str;
  * 認知の手すりチェック Lite v3.0 — 問題シーダー
  *
  * 全4セクション、各24問プール → ランダム6問出題
- * A: 言語整理 (MULTIPLE_CHOICE, max 1pt/問)
- * B: 構造理解 (MULTIPLE_CHOICE, max 1pt/問)
- * C: 保持操作 (MULTIPLE_CHOICE, max 1pt/問)
+ * A: 言語整理 (MULTIPLE_CHOICE, 1pt/問 ※難問は2pt)
+ * B: 構造理解 (MULTIPLE_CHOICE, 1pt/問 ※難問は2pt)
+ * C: 保持操作 (MULTIPLE_CHOICE, 1pt/問 ※難問は2pt)
  * D: 速度耐性 (TIME_BASED, ○/× 2択, max 1pt/問)
  */
 class QuestionSeeder extends Seeder
@@ -139,9 +139,10 @@ class QuestionSeeder extends Seeder
                 'correct' => 'B',
             ],
             [
-                'content' => "「主観」の反対として最も適切な言葉はどれですか？",
-                'options' => ['A' => '感情', 'B' => '印象', 'C' => '客観', 'D' => '意見'],
-                'correct' => 'C',
+                'content'    => "「主観」の反対として最も適切な言葉はどれですか？",
+                'options'    => ['A' => '感情', 'B' => '印象', 'C' => '客観', 'D' => '意見'],
+                'correct'    => 'C',
+                'max_points' => 2,
             ],
             // 共通点
             [
@@ -187,9 +188,10 @@ class QuestionSeeder extends Seeder
                 'correct' => 'C',
             ],
             [
-                'content' => "次の数列の□に入る数字はどれですか？\n\n1, 1, 2, 3, 5, 8, □",
-                'options' => ['A' => '11', 'B' => '12', 'C' => '13', 'D' => '14'],
-                'correct' => 'C',
+                'content'    => "次の数列の□に入る数字はどれですか？\n\n1, 1, 2, 3, 5, 8, □",
+                'options'    => ['A' => '11', 'B' => '12', 'C' => '13', 'D' => '14'],
+                'correct'    => 'C',
+                'max_points' => 2,
             ],
             [
                 'content' => "次の数列の□に入る数字はどれですか？\n\n3, 6, 12, 24, □",
@@ -197,9 +199,10 @@ class QuestionSeeder extends Seeder
                 'correct' => 'C',
             ],
             [
-                'content' => "次の数列の□に入る数字はどれですか？\n\n5, 10, 8, 16, 14, 28, □",
-                'options' => ['A' => '24', 'B' => '26', 'C' => '56', 'D' => '30'],
-                'correct' => 'B',
+                'content'    => "次の数列の□に入る数字はどれですか？\n\n5, 10, 8, 16, 14, 28, □",
+                'options'    => ['A' => '24', 'B' => '26', 'C' => '56', 'D' => '30'],
+                'correct'    => 'B',
+                'max_points' => 2,
             ],
             [
                 'content' => "次の数列の□に入る数字はどれですか？\n\n100, 50, 25, □",
@@ -281,24 +284,28 @@ class QuestionSeeder extends Seeder
                 'correct' => 'C',
             ],
             [
-                'content' => "縦3列×横3列の9マスの表があります。\n対角線上のマスの数はいくつですか？",
-                'options' => ['A' => '2', 'B' => '3', 'C' => '4', 'D' => '5'],
-                'correct' => 'D',
+                'content'    => "縦3列×横3列の9マスの表があります。\n対角線上のマスの数はいくつですか？",
+                'options'    => ['A' => '2', 'B' => '3', 'C' => '4', 'D' => '5'],
+                'correct'    => 'D',
+                'max_points' => 2,
             ],
             [
-                'content' => "次のうち、互いに素（最大公約数が1）の組み合わせはどれですか？",
-                'options' => ['A' => '4と6', 'B' => '9と15', 'C' => '7と13', 'D' => '8と12'],
-                'correct' => 'C',
+                'content'    => "次のうち、互いに素（最大公約数が1）の組み合わせはどれですか？",
+                'options'    => ['A' => '4と6', 'B' => '9と15', 'C' => '7と13', 'D' => '8と12'],
+                'correct'    => 'C',
+                'max_points' => 2,
             ],
             [
-                'content' => "3つの整数A・B・Cがあり、A×B=12、B×C=18、A×C=6 のとき、Bはどれですか？",
-                'options' => ['A' => '2', 'B' => '3', 'C' => '4', 'D' => '6'],
-                'correct' => 'D',
+                'content'    => "3つの整数A・B・Cがあり、A×B=12、B×C=18、A×C=6 のとき、Bはどれですか？",
+                'options'    => ['A' => '2', 'B' => '3', 'C' => '4', 'D' => '6'],
+                'correct'    => 'D',
+                'max_points' => 2,
             ],
             [
-                'content' => "規則「偶数なら÷2、奇数なら×3+1」を3に適用して3回繰り返すと最後の値はどれですか？\n\n3 → ? → ? → ?",
-                'options' => ['A' => '2', 'B' => '5', 'C' => '8', 'D' => '10'],
-                'correct' => 'B',
+                'content'    => "規則「偶数なら÷2、奇数なら×3+1」を3に適用して3回繰り返すと最後の値はどれですか？\n\n3 → ? → ? → ?",
+                'options'    => ['A' => '2', 'B' => '5', 'C' => '8', 'D' => '10'],
+                'correct'    => 'B',
+                'max_points' => 2,
             ],
         ];
 
@@ -338,9 +345,10 @@ class QuestionSeeder extends Seeder
                 'correct' => 'B',
             ],
             [
-                'content' => "頭の中で計算してください。\n\n15% の 200 = ？",
-                'options' => ['A' => '25', 'B' => '30', 'C' => '35', 'D' => '40'],
-                'correct' => 'B',
+                'content'    => "頭の中で計算してください。\n\n15% の 200 = ？",
+                'options'    => ['A' => '25', 'B' => '30', 'C' => '35', 'D' => '40'],
+                'correct'    => 'B',
+                'max_points' => 2,
             ],
             // 数字の逆順・並べ替え
             [
@@ -359,9 +367,10 @@ class QuestionSeeder extends Seeder
                 'correct' => 'B',
             ],
             [
-                'content' => "「4, 7, 2, 9, 5」の中央値（小さい順に並べたとき中央の値）はどれですか？",
-                'options' => ['A' => '4', 'B' => '5', 'C' => '6', 'D' => '7'],
-                'correct' => 'B',
+                'content'    => "「4, 7, 2, 9, 5」の中央値（小さい順に並べたとき中央の値）はどれですか？",
+                'options'    => ['A' => '4', 'B' => '5', 'C' => '6', 'D' => '7'],
+                'correct'    => 'B',
+                'max_points' => 2,
             ],
             // 条件保持・推論
             [
@@ -380,9 +389,10 @@ class QuestionSeeder extends Seeder
                 'correct' => 'C',
             ],
             [
-                'content' => "A、B、Cの3人でプレゼントを買います。\n合計3,600円をA:B:C = 2:1:1の割合で負担するとき、Aの負担額はいくらですか？",
-                'options' => ['A' => '1,200円', 'B' => '1,500円', 'C' => '1,800円', 'D' => '2,000円'],
-                'correct' => 'C',
+                'content'    => "A、B、Cの3人でプレゼントを買います。\n合計3,600円をA:B:C = 2:1:1の割合で負担するとき、Aの負担額はいくらですか？",
+                'options'    => ['A' => '1,200円', 'B' => '1,500円', 'C' => '1,800円', 'D' => '2,000円'],
+                'correct'    => 'C',
+                'max_points' => 2,
             ],
             [
                 'content' => "毎週月曜日に会議があります。今日が水曜日の場合、\n次の会議まで何日ありますか？",
@@ -489,7 +499,7 @@ class QuestionSeeder extends Seeder
     }
 
     /**
-     * @param array<array{content: string, options: array<string,string>, correct: string}> $questions
+     * @param array<array{content: string, options: array<string,string>, correct: string, max_points?: int}> $questions
      */
     private function insertMultipleChoice(string $subtest, array $questions): void
     {
@@ -502,7 +512,7 @@ class QuestionSeeder extends Seeder
                 'question_type'   => 'multiple_choice',
                 'correct_answer'  => $q['correct'],
                 'options'         => $q['options'],
-                'max_points'      => 1,
+                'max_points'      => $q['max_points'] ?? 1,
                 'hint'            => null,
             ]);
         }
