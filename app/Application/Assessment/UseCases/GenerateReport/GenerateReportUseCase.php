@@ -116,7 +116,7 @@ final class GenerateReportUseCase
             strategies: $strategies,
             nextSteps: $nextSteps,
             aiAdvice: $aiAdvice,
-            generatedAt: (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+            generatedAt: (new DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo')))->format('Y-m-d H:i:s'),
         );
     }
 
