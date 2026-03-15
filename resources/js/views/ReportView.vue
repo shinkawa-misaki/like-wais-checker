@@ -25,7 +25,7 @@
       <template v-else-if="report">
 
         <!-- 免責事項 -->
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800">
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 whitespace-pre-line">
           {{ report.disclaimer }}
         </div>
 
@@ -128,7 +128,7 @@
               :class="['rounded-xl p-4 text-sm', STRATEGY_META[key]?.colorClass || 'bg-gray-50 border border-gray-200 text-gray-800']"
             >
               <p v-if="STRATEGY_META[key]?.label" class="text-xs font-semibold mb-1">{{ STRATEGY_META[key].label }}</p>
-              {{ desc }}
+              <span class="whitespace-pre-line">{{ desc }}</span>
             </div>
           </div>
         </section>
@@ -136,7 +136,7 @@
         <!-- AI アドバイス（コンディション不良時のみ） -->
         <div v-if="report.aiAdvice" class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
           <p class="text-xs font-semibold mb-2">💡 AIからのアドバイス</p>
-          {{ report.aiAdvice }}
+          <span class="whitespace-pre-line">{{ report.aiAdvice }}</span>
         </div>
 
         <!-- 次の一手 -->

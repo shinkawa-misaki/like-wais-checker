@@ -26,8 +26,7 @@
 
     <!-- 選択肢がない場合のエラー表示 -->
     <div v-if="!question.options || Object.keys(question.options).length === 0" class="bg-red-50 border border-red-200 rounded-xl p-4">
-      <p class="text-red-700 text-sm">⚠️ 選択肢が読み込まれませんでした。</p>
-      <p class="text-xs text-red-600 mt-1">問題データ: {{ JSON.stringify(question) }}</p>
+      <p class="text-red-700 text-sm">⚠️ 選択肢が読み込まれませんでした。ページを再読み込みしてください。</p>
     </div>
 
     <div v-else class="grid grid-cols-2 gap-2">
