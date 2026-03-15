@@ -21,7 +21,7 @@
       <div class="flex items-center gap-2 mb-3">
         <span class="text-xs font-semibold text-gray-400">問 {{ question.sequenceNumber }}</span>
       </div>
-      <p class="text-gray-800 font-medium whitespace-pre-line">{{ question.content }}</p>
+      <p class="text-gray-800 font-medium whitespace-pre-line">{{ processContent(question.content) }}</p>
     </div>
 
     <!-- 選択肢がない場合のエラー表示 -->
@@ -65,6 +65,12 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['answered']);
+
+// リテラル \n (バックスラッシュ+n) を実際の改行文字に変換
+// DB/APIによっては literal \n として伝送されるため両方に対応する
+function processContent(text) {
+    return (text ?? '').replace(/\\n/g, '\n');
+}
 
 const selected = ref(null);
 const remaining = ref(props.timeLimitSeconds ?? 0);

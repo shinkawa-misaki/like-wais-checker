@@ -372,7 +372,7 @@ class QuestionSeeder extends Seeder
             ],
             [
                 'content'    => "規則「偶数なら÷2、奇数なら×3+1」を3に適用して2回繰り返すと最後の値はどれですか？\n\n3 → ? → ?",
-                'options'    => ['A' => '2', 'B' => '5', 'C' => '8', 'D' => '10'],
+                'options'    => ['A' => '10', 'B' => '5', 'C' => '16', 'D' => '2'],
                 'correct'    => 'B',
                 'max_points' => 2,
             ],

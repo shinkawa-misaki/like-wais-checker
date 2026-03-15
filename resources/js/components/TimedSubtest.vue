@@ -40,7 +40,7 @@
           <div class="flex items-start gap-3">
             <span class="text-xs font-bold text-gray-400 pt-0.5 shrink-0">{{ i + 1 }}.</span>
             <div class="flex-1">
-              <p class="text-sm text-gray-700 whitespace-pre-line mb-2">{{ q.content }}</p>
+              <p class="text-sm text-gray-700 whitespace-pre-line mb-2">{{ processContent(q.content) }}</p>
               <!-- 速度耐性: ○×ボタン -->
               <div class="flex gap-2">
                 <button
@@ -96,6 +96,10 @@
 
 <script setup>
 import { ref, computed, onUnmounted } from 'vue';
+
+function processContent(text) {
+    return (text ?? '').replace(/\\n/g, '\n');
+}
 
 const props = defineProps({
     questions: { type: Array, required: true },
