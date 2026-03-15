@@ -106,12 +106,23 @@ final class ScoringDomainService
     /**
      * Calculate pseudo IQ score from percentage.
      *
-     * 基準値: 平均100, SD=15（標準IQ分布）
-     *   0%  → z=-3 → IQ=55  → クランプ下限
-     *  50%  → z= 0 → IQ=100
-     * 100%  → z=+3 → IQ=145 → クランプ上限 125
+     * 難易度補正あり: このテストで一般ユーザーが平均的に取る正答率を
+     * DIFFICULTY_MEAN で定義し、その正答率が IQ100（50パーセンタイル）に
+     * なるよう線形シフトしてから z-score に変換する。
+     *
+     * DIFFICULTY_MEAN = 0.65 の場合の目安:
+     *   0/6 (  0%) → IQ  55（下限）
+     *   2/6 ( 33%) → IQ  89
+     *   3/6 ( 50%) → IQ  95
+     *   4/6 ( 67%) → IQ 101
+     *   5/6 ( 83%) → IQ 112
+     *   6/6 (100%) → IQ 125（上限）
+     *
+     * DIFFICULTY_MEAN を上げる（例: 0.75）ほど全体的に IQ が下がる。
      * 出力範囲: 55〜125
      */
+    private const DIFFICULTY_MEAN = 0.65;
+
     public function calculatePseudoIQ(float $percentage): int
     {
         $normalized = $percentage / 100.0;
@@ -123,7 +134,15 @@ final class ScoringDomainService
             return 125;
         }
 
-        $zScore = $this->percentileToZScore($normalized);
+        // 難易度補正: DIFFICULTY_MEAN の正答率が 50パーセンタイル（IQ100）になるよう調整
+        $mean = self::DIFFICULTY_MEAN;
+        if ($normalized <= $mean) {
+            $adjusted = $normalized / (2.0 * $mean);
+        } else {
+            $adjusted = 0.5 + ($normalized - $mean) / (2.0 * (1.0 - $mean));
+        }
+
+        $zScore = $this->percentileToZScore(max(0.0, min(1.0, $adjusted)));
 
         // 標準IQ: 平均100・SD15
         $iq = 100 + ($zScore * 15);
@@ -132,28 +151,28 @@ final class ScoringDomainService
     }
 
     /**
-     * Convert percentile (0-1) to z-score using approximation
+     * Convert percentile (0-1) to z-score using piecewise linear approximation.
+     * Breakpoints: 2%≈-3SD, 16%≈-1SD, 50%=0SD, 84%≈+1SD, 98%≈+3SD
      */
     private function percentileToZScore(float $percentile): float
     {
-        // 0-1の範囲を-3から+3のz-scoreに変換
-        // 簡易的な線形近似（より正確には逆正規分布関数を使用すべきだが、簡略化のため）
-
-        // パーセンタイルを標準正規分布のz-scoreに変換
-        // 16% ≈ -1SD, 50% = 0SD, 84% ≈ +1SD
         if ($percentile <= 0.02) {
             return -3.0;
         }
         if ($percentile <= 0.16) {
-            return -1.0 + ($percentile - 0.02) / 0.14 * (-2.0);
+            // -3.0 at 2% → -1.0 at 16%
+            return -3.0 + ($percentile - 0.02) / 0.14 * 2.0;
         }
         if ($percentile <= 0.50) {
+            // -1.0 at 16% → 0.0 at 50%
             return -1.0 + ($percentile - 0.16) / 0.34;
         }
         if ($percentile <= 0.84) {
-            return 0.0 + ($percentile - 0.50) / 0.34;
+            // 0.0 at 50% → +1.0 at 84%
+            return ($percentile - 0.50) / 0.34;
         }
         if ($percentile <= 0.98) {
+            // +1.0 at 84% → +3.0 at 98%
             return 1.0 + ($percentile - 0.84) / 0.14 * 2.0;
         }
         return 3.0;
