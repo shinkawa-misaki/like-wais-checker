@@ -52,6 +52,7 @@ final class WaisAssessmentServiceProvider extends ServiceProvider
         $this->app->bind(GenerateReportUseCase::class, fn ($app) => new GenerateReportUseCase(
             assessmentRepository: $app->make(AssessmentRepositoryInterface::class),
             scoringService: $app->make(ScoringDomainService::class),
+            claudeApiService: $app->make(\App\Services\ClaudeApiService::class),
         ));
     }
 }

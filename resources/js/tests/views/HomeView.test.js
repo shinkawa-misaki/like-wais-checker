@@ -38,7 +38,7 @@ describe('HomeView', () => {
 
     it('タイトルが表示される', () => {
         const wrapper = makeWrapper();
-        expect(wrapper.text()).toContain('WAIS風 4指数ミニチェック');
+        expect(wrapper.text()).toContain('認知の手すりチェック Lite');
     });
 
     it('4つの指数カードが表示される', () => {
@@ -70,14 +70,14 @@ describe('HomeView', () => {
     it('全完了セッションは「再開」リンクを表示しない', () => {
         const wrapper = makeWrapper({
             assessmentId: 'done-id',
-            completedSubtests: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+            completedSubtests: ['A', 'B', 'C', 'D'],
         });
         expect(wrapper.text()).not.toContain('前回の続きから再開する');
     });
 
     it('所要時間の目安が表示される', () => {
         const wrapper = makeWrapper();
-        expect(wrapper.text()).toContain('30〜40分');
+        expect(wrapper.text()).toContain('10〜20分');
     });
 
     it('「検査を始める」クリックでstoreがリセットされdisclaimerへ遷移する', async () => {

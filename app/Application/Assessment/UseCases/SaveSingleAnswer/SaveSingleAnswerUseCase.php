@@ -9,7 +9,6 @@ use App\Domain\Assessment\Repositories\AssessmentRepositoryInterface;
 use App\Domain\Assessment\Repositories\QuestionRepositoryInterface;
 use App\Domain\Assessment\Services\ScoringDomainService;
 use App\Domain\Assessment\ValueObjects\AssessmentId;
-use App\Domain\Assessment\ValueObjects\QuestionType;
 use App\Domain\Assessment\ValueObjects\Score;
 use App\Domain\Assessment\ValueObjects\SubtestType;
 use DomainException;
@@ -49,11 +48,9 @@ final class SaveSingleAnswerUseCase
             throw new DomainException("Question not found: {$input->questionId}");
         }
 
-        // 採点: FREE_TEXT / TIME_BASED はユーザーの自己採点、それ以外は自動採点
-        if (
-            $question->getQuestionType() === QuestionType::FREE_TEXT
-            || $question->getQuestionType() === QuestionType::TIME_BASED
-        ) {
+        // correct_answer があれば自動採点（TIME_BASED の ○/× も含む）
+        // correct_answer が null の自由記述のみユーザー送信スコアを使用
+        if ($question->getCorrectAnswer() === null) {
             $awardedScore = new Score(
                 max(0.0, min((float) ($input->awardedScore ?? 0), (float) $question->getMaxPoints()))
             );
@@ -77,11 +74,6 @@ final class SaveSingleAnswerUseCase
         );
 
         $this->assessmentRepository->saveAnswer($answer);
-
-        // FREE_TEXT のみ模範解答を返す（自己採点UI用）
-        if ($question->getQuestionType() === QuestionType::FREE_TEXT) {
-            return $question->getCorrectAnswer();
-        }
 
         return null;
     }

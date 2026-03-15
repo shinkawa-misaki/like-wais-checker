@@ -25,6 +25,7 @@ final class GetSubtestQuestionsUseCase
      *   subtestLabel: string,
      *   indexType: string,
      *   timeLimitSeconds: int|null,
+     *   questionTimeLimitSeconds: int,
      *   questions: array<QuestionDto>,
      *   instructions: string
      * }
@@ -51,34 +52,34 @@ final class GetSubtestQuestionsUseCase
         );
 
         return [
-            'subtestType'      => $subtestType->value,
-            'subtestLabel'     => $subtestType->label(),
-            'indexType'        => $subtestType->indexType()->value,
-            'timeLimitSeconds' => $subtestType->timeLimitSeconds(),
-            'questions'        => $questionDtos,
-            'instructions'     => $this->buildInstructions($subtestType),
+            'subtestType'             => $subtestType->value,
+            'subtestLabel'            => $subtestType->label(),
+            'indexType'               => $subtestType->indexType()->value,
+            'timeLimitSeconds'        => $subtestType->timeLimitSeconds(),
+            'questionTimeLimitSeconds' => $subtestType->questionTimeLimitSeconds(),
+            'questions'               => $questionDtos,
+            'instructions'            => $this->buildInstructions($subtestType),
         ];
     }
 
     private function buildInstructions(SubtestType $subtestType): string
     {
         return match ($subtestType) {
-            SubtestType::SIMILARITIES =>
-                '2つの言葉の共通点を「一文＋補足一文まで」で答えてください。抽象的なカテゴリで答えるとより高得点になります。（例：「犬と猫」→「どちらも哺乳類のペット」）',
-            SubtestType::VOCABULARY =>
-                '提示された単語を短く説明してください（定義＋例1つまで）。簡潔かつ本質を捉えた説明が高得点です。',
-            SubtestType::PATTERN_RECOGNITION =>
-                '並びの規則を見つけ、次に来るものを4択から選んでください。A, B, C, Dのいずれかで答えてください。',
-            SubtestType::MATRIX_REASONING =>
-                '縦横の規則が同時に走る問題です。4択から正しい答えを選んでください。A, B, C, Dのいずれかで答えてください。',
-            SubtestType::DIGIT_SPAN =>
-                '提示された数字列を指示通りに答えてください。順唱はそのまま、逆唱は逆から、並べ替えは小さい順に。答えは1回のみ、やり直し不可です。',
-            SubtestType::ARITHMETIC =>
-                '暗算で答えてください（紙の筆算禁止）。各問20秒以内を目安にしてください。',
-            SubtestType::SYMBOL_SEARCH =>
-                '【タイマー必須】タイマーを90秒にセットしてから開始してください。ターゲット2文字が検索列に「両方ある」なら○、片方/両方ないなら×で答えてください。迷ったら次へ進んでください。',
-            SubtestType::CODING =>
-                '【タイマー必須】対応表（1=A, 2=B, 3=C, 4=D, 5=E, 6=F, 7=G, 8=H, 9=I）を見て、90秒以内にできるだけ多くの数字を文字に変換してください。',
+            SubtestType::VERBAL_ORGANIZATION =>
+                '言語的な類推・カテゴリー分類・言い換え・共通点把握の問題です。'
+                . 'A〜Dの選択肢から最も適切なものを1つ選んでください。'
+                . "\n\n⏱️ 1問あたり30秒の制限時間があります。時間内に回答してください。",
+            SubtestType::STRUCTURAL_UNDERSTANDING =>
+                '数列や記号列の規則発見・パターン認識・論理的分類の問題です。'
+                . 'A〜Dの選択肢から正解を1つ選んでください。'
+                . "\n\n⏱️ 1問あたり30秒の制限時間があります。時間内に回答してください。",
+            SubtestType::RETENTION_MANIPULATION =>
+                '頭の中で数を操作したり、情報を保持しながら処理する問題です。'
+                . 'A〜Dの選択肢から正解を1つ選んでください。'
+                . "\n\n⏱️ 1問あたり30秒の制限時間があります。時間内に回答してください。",
+            SubtestType::SPEED_RESILIENCE =>
+                '【60秒の制限時間】左の記号が右のグループに含まれているか素早く判断してください。'
+                . '○（はい）か×（いいえ）で答えてください。迷ったら飛ばして次へ進んでください。',
         };
     }
 }

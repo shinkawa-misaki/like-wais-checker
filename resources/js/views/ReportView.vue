@@ -25,7 +25,7 @@
       <template v-else-if="report">
 
         <!-- 免責事項 -->
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800">
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 whitespace-pre-line">
           {{ report.disclaimer }}
         </div>
 
@@ -120,20 +120,24 @@
 
         <!-- 戦略 -->
         <section>
-          <h2 class="text-base font-bold text-gray-800 mb-3">🎯 仕事・学習の戦略</h2>
+          <h2 class="text-base font-bold text-gray-800 mb-3">🛡️ 生活と仕事の「次の一手」</h2>
           <div class="space-y-3">
             <div
               v-for="(desc, key) in report.strategies"
               :key="key"
-              :class="[
-                'rounded-xl p-4 text-sm',
-                key.startsWith('strength') ? 'bg-blue-50 border border-blue-200 text-blue-800' : 'bg-purple-50 border border-purple-200 text-purple-800'
-              ]"
+              :class="['rounded-xl p-4 text-sm', STRATEGY_META[key]?.colorClass || 'bg-gray-50 border border-gray-200 text-gray-800']"
             >
-              {{ desc }}
+              <p v-if="STRATEGY_META[key]?.label" class="text-xs font-semibold mb-1">{{ STRATEGY_META[key].label }}</p>
+              <span class="whitespace-pre-line">{{ desc }}</span>
             </div>
           </div>
         </section>
+
+        <!-- AI アドバイス（コンディション不良時のみ） -->
+        <div v-if="report.aiAdvice" class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
+          <p class="text-xs font-semibold mb-2">💡 AIからのアドバイス</p>
+          <span class="whitespace-pre-line">{{ report.aiAdvice }}</span>
+        </div>
 
         <!-- 次の一手 -->
         <section>
@@ -202,6 +206,12 @@ import { useAssessmentStore } from '../stores/assessment.js';
 
 const router = useRouter();
 const store = useAssessmentStore();
+
+const STRATEGY_META = {
+    work:     { label: '💼 仕事の守り方',    colorClass: 'bg-blue-50 border border-blue-200 text-blue-800' },
+    life:     { label: '🏠 生活の守り方',    colorClass: 'bg-purple-50 border border-purple-200 text-purple-800' },
+    strength: { label: '🚀 強みの伸ばし方', colorClass: 'bg-green-50 border border-green-200 text-green-800' },
+};
 
 const report = ref(null);
 const loading = ref(true);

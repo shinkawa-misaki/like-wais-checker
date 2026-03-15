@@ -46,14 +46,14 @@ final class AssessmentApiTest extends TestCase
         $response->assertJsonPath('data.status', 'in_progress');
     }
 
-    public function test_start_assessment_has_8_remaining_subtests(): void
+    public function test_start_assessment_has_4_remaining_subtests(): void
     {
         $response = $this->postJson('/api/assessments');
 
-        $this->assertCount(8, $response->json('data.remainingSubtests'));
+        $this->assertCount(4, $response->json('data.remainingSubtests'));
     }
 
-    public function test_get_questions_for_similarities_subtest(): void
+    public function test_get_questions_for_verbal_organization_subtest(): void
     {
         $assessmentId = $this->startAssessment();
 
@@ -72,13 +72,13 @@ final class AssessmentApiTest extends TestCase
             ]);
     }
 
-    public function test_get_questions_returns_10_for_similarities(): void
+    public function test_get_questions_returns_6_for_verbal_organization(): void
     {
         $assessmentId = $this->startAssessment();
 
         $response = $this->getJson("/api/assessments/{$assessmentId}/subtests/A/questions");
 
-        $this->assertCount(10, $response->json('data.questions'));
+        $this->assertCount(6, $response->json('data.questions'));
     }
 
     public function test_get_questions_for_invalid_subtest_returns_422(): void
@@ -90,17 +90,17 @@ final class AssessmentApiTest extends TestCase
         $response->assertStatus(422);
     }
 
-    public function test_submit_answers_for_pattern_recognition_subtest(): void
+    public function test_submit_answers_for_structural_understanding_subtest(): void
     {
         $assessmentId = $this->startAssessment();
-        $questions = $this->getQuestions($assessmentId, 'C');
+        $questions = $this->getQuestions($assessmentId, 'B');
 
         $answers = array_map(
             fn ($q) => ['question_id' => $q['id'], 'response' => 'A'],
             $questions
         );
 
-        $response = $this->postJson("/api/assessments/{$assessmentId}/subtests/C/answers", [
+        $response = $this->postJson("/api/assessments/{$assessmentId}/subtests/B/answers", [
             'answers' => $answers,
         ]);
 
@@ -114,7 +114,7 @@ final class AssessmentApiTest extends TestCase
         $questions = $this->getQuestions($assessmentId, 'A');
 
         $answers = array_map(
-            fn ($q) => ['question_id' => $q['id'], 'response' => '動物', 'awarded_score' => 1],
+            fn ($q) => ['question_id' => $q['id'], 'response' => '回答', 'awarded_score' => 1],
             $questions
         );
 
@@ -123,25 +123,24 @@ final class AssessmentApiTest extends TestCase
         ]);
 
         $submitResponse->assertStatus(200);
-        // Subtest A should now be in completed list
         $this->assertContains('A', $submitResponse->json('data.completedSubtests'));
     }
 
     public function test_submit_duplicate_subtest_returns_422(): void
     {
         $assessmentId = $this->startAssessment();
-        $questions = $this->getQuestions($assessmentId, 'C');
+        $questions = $this->getQuestions($assessmentId, 'B');
 
         $answers = array_map(
             fn ($q) => ['question_id' => $q['id'], 'response' => 'A'],
             $questions
         );
 
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/C/answers", [
+        $this->postJson("/api/assessments/{$assessmentId}/subtests/B/answers", [
             'answers' => $answers,
         ]);
 
-        $response = $this->postJson("/api/assessments/{$assessmentId}/subtests/C/answers", [
+        $response = $this->postJson("/api/assessments/{$assessmentId}/subtests/B/answers", [
             'answers' => $answers,
         ]);
 
@@ -168,7 +167,6 @@ final class AssessmentApiTest extends TestCase
     {
         $assessmentId = $this->startAssessment();
 
-        // 回答なしでもサブテスト完了マークとして200が返る
         $response = $this->postJson("/api/assessments/{$assessmentId}/subtests/A/answers", []);
 
         $response->assertStatus(200);
@@ -209,7 +207,7 @@ final class AssessmentApiTest extends TestCase
     {
         $assessmentId = $this->startAssessment();
 
-        // Subtest A: 1問ずつ保存 (全問2点)
+        // Subtest A (言語整理): 1問ずつ保存 (全問2点)
         $questionsA = $this->getQuestions($assessmentId, 'A');
         foreach ($questionsA as $q) {
             $this->postJson("/api/assessments/{$assessmentId}/subtests/A/answer", [
@@ -222,69 +220,47 @@ final class AssessmentApiTest extends TestCase
         $this->postJson("/api/assessments/{$assessmentId}/subtests/A/answers", [])
             ->assertStatus(200);
 
-        // Subtest B: 1問ずつ保存 (全問1点)
-        $questionsB = $this->getQuestions($assessmentId, 'B');
-        foreach ($questionsB as $q) {
-            $this->postJson("/api/assessments/{$assessmentId}/subtests/B/answer", [
-                'question_id'   => $q['id'],
-                'response'      => '回答',
-                'awarded_score' => 1,
-            ])->assertStatus(200);
-        }
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/B/answers", [])
-            ->assertStatus(200);
-
         // 残りのサブテストを完了
-        $this->completeRemainingSubtests($assessmentId, ['A', 'B']);
+        $this->completeRemainingSubtests($assessmentId, ['A']);
 
         $report = $this->getJson("/api/assessments/{$assessmentId}/report")->assertStatus(200);
 
-        // A: 10×2=20, B: 10×1=10 → VCI = 30
+        // A: 6×2=12 → VCI = 12
         $vci = $this->findIndexScore($report->json('data.indexScores'), 'VCI');
-        $this->assertEquals(30.0, $vci['rawScore'], 'VCI raw score should be 30 (per-question save)');
+        $this->assertEquals(12.0, $vci['rawScore'], 'VCI raw score should be 12 (per-question save)');
     }
 
     // -----------------------------------------------------------------------
-    // End-to-end scoring pipeline tests for VCI (言語理解) and WMI (ワーキングメモリ)
+    // End-to-end scoring pipeline tests
     // -----------------------------------------------------------------------
 
     public function test_vci_scoring_uses_user_awarded_score_for_free_text(): void
     {
         $assessmentId = $this->startAssessment();
 
-        // Submit subtest A (SIMILARITIES / FREE_TEXT) with full score
+        // Subtest A (言語整理 / FREE_TEXT) with full score
         $questionsA = $this->getQuestions($assessmentId, 'A');
         $answersA = array_map(
-            fn ($q) => ['question_id' => $q['id'], 'response' => '動物', 'awarded_score' => 2],
+            fn ($q) => ['question_id' => $q['id'], 'response' => '要点回答', 'awarded_score' => 2],
             $questionsA
         );
         $this->postJson("/api/assessments/{$assessmentId}/subtests/A/answers", ['answers' => $answersA])
             ->assertStatus(200);
 
-        // Submit subtest B (VOCABULARY / FREE_TEXT) with full score
-        $questionsB = $this->getQuestions($assessmentId, 'B');
-        $answersB = array_map(
-            fn ($q) => ['question_id' => $q['id'], 'response' => '物体', 'awarded_score' => 2],
-            $questionsB
-        );
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/B/answers", ['answers' => $answersB])
-            ->assertStatus(200);
-
-        // Complete remaining subtests to allow report generation
-        $this->completeRemainingSubtests($assessmentId, ['A', 'B']);
+        $this->completeRemainingSubtests($assessmentId, ['A']);
 
         $report = $this->getJson("/api/assessments/{$assessmentId}/report")->assertStatus(200);
 
-        // VCI raw score = 10 questions × 2 pts (A) + 10 questions × 2 pts (B) = 40
+        // VCI raw score = 6 questions × 2 pts = 12
         $vci = $this->findIndexScore($report->json('data.indexScores'), 'VCI');
-        $this->assertEquals(40.0, $vci['rawScore'], 'VCI raw score should be 40 (full marks)');
+        $this->assertEquals(12.0, $vci['rawScore'], 'VCI raw score should be 12 (full marks)');
     }
 
     public function test_vci_partial_awarded_score_is_preserved(): void
     {
         $assessmentId = $this->startAssessment();
 
-        // Subtest A: alternate 2 and 1 points → 10 questions: 5×2 + 5×1 = 15
+        // Subtest A: alternate 2 and 1 points → 6 questions: 3×2 + 3×1 = 9
         $questionsA = $this->getQuestions($assessmentId, 'A');
         $answersA = [];
         foreach ($questionsA as $i => $q) {
@@ -297,78 +273,51 @@ final class AssessmentApiTest extends TestCase
         $this->postJson("/api/assessments/{$assessmentId}/subtests/A/answers", ['answers' => $answersA])
             ->assertStatus(200);
 
-        // Subtest B: all zero points
-        $questionsB = $this->getQuestions($assessmentId, 'B');
-        $answersB = array_map(
-            fn ($q) => ['question_id' => $q['id'], 'response' => '不正解', 'awarded_score' => 0],
-            $questionsB
-        );
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/B/answers", ['answers' => $answersB])
-            ->assertStatus(200);
-
-        $this->completeRemainingSubtests($assessmentId, ['A', 'B']);
+        $this->completeRemainingSubtests($assessmentId, ['A']);
 
         $report = $this->getJson("/api/assessments/{$assessmentId}/report")->assertStatus(200);
 
-        // A: 5×2 + 5×1 = 15, B: 0 → VCI = 15
+        // A: 3×2 + 3×1 = 9 → VCI = 9
         $vci = $this->findIndexScore($report->json('data.indexScores'), 'VCI');
-        $this->assertEquals(15.0, $vci['rawScore'], 'VCI raw score should be 15 (partial scoring)');
+        $this->assertEquals(9.0, $vci['rawScore'], 'VCI raw score should be 9 (partial scoring)');
     }
 
-    public function test_wmi_scoring_auto_grades_sequence_and_multiple_choice(): void
+    public function test_wmi_scoring_auto_grades_sequence(): void
     {
         $assessmentId = $this->startAssessment();
 
-        // Subtest E (DIGIT_SPAN / SEQUENCE): correct answer is '123'
-        $questionsE = $this->getQuestions($assessmentId, 'E');
-        $answersE = array_map(
+        // Subtest C (保持操作 / SEQUENCE): correct answer is '123'
+        $questionsC = $this->getQuestions($assessmentId, 'C');
+        $answersC = array_map(
             fn ($q) => ['question_id' => $q['id'], 'response' => '123', 'awarded_score' => null],
-            $questionsE
+            $questionsC
         );
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/E/answers", ['answers' => $answersE])
+        $this->postJson("/api/assessments/{$assessmentId}/subtests/C/answers", ['answers' => $answersC])
             ->assertStatus(200);
 
-        // Subtest F (ARITHMETIC / MULTIPLE_CHOICE): correct answer is 'A'
-        $questionsF = $this->getQuestions($assessmentId, 'F');
-        $answersF = array_map(
-            fn ($q) => ['question_id' => $q['id'], 'response' => 'A', 'awarded_score' => null],
-            $questionsF
-        );
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/F/answers", ['answers' => $answersF])
-            ->assertStatus(200);
-
-        $this->completeRemainingSubtests($assessmentId, ['E', 'F']);
+        $this->completeRemainingSubtests($assessmentId, ['C']);
 
         $report = $this->getJson("/api/assessments/{$assessmentId}/report")->assertStatus(200);
 
-        // E: 18 correct × 1pt = 18, F: 10 correct × 1pt = 10 → WMI = 28
+        // C: 6 correct × 1pt = 6 → WMI = 6
         $wmi = $this->findIndexScore($report->json('data.indexScores'), 'WMI');
-        $this->assertEquals(28.0, $wmi['rawScore'], 'WMI raw score should be 28 (all correct)');
+        $this->assertEquals(6.0, $wmi['rawScore'], 'WMI raw score should be 6 (all correct)');
     }
 
     public function test_wmi_wrong_answers_score_zero(): void
     {
         $assessmentId = $this->startAssessment();
 
-        // Subtest E: all wrong (response does not match correct answer '123')
-        $questionsE = $this->getQuestions($assessmentId, 'E');
-        $answersE = array_map(
+        // Subtest C: all wrong
+        $questionsC = $this->getQuestions($assessmentId, 'C');
+        $answersC = array_map(
             fn ($q) => ['question_id' => $q['id'], 'response' => '999', 'awarded_score' => null],
-            $questionsE
+            $questionsC
         );
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/E/answers", ['answers' => $answersE])
+        $this->postJson("/api/assessments/{$assessmentId}/subtests/C/answers", ['answers' => $answersC])
             ->assertStatus(200);
 
-        // Subtest F: all wrong (response does not match correct answer 'A')
-        $questionsF = $this->getQuestions($assessmentId, 'F');
-        $answersF = array_map(
-            fn ($q) => ['question_id' => $q['id'], 'response' => 'D', 'awarded_score' => null],
-            $questionsF
-        );
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/F/answers", ['answers' => $answersF])
-            ->assertStatus(200);
-
-        $this->completeRemainingSubtests($assessmentId, ['E', 'F']);
+        $this->completeRemainingSubtests($assessmentId, ['C']);
 
         $report = $this->getJson("/api/assessments/{$assessmentId}/report")->assertStatus(200);
 
@@ -377,82 +326,61 @@ final class AssessmentApiTest extends TestCase
         $this->assertEquals(0.0, $wmi['rawScore'], 'WMI raw score should be 0 (all wrong)');
     }
 
-    public function test_complete_assessment_full_vci_and_wmi_scores(): void
+    public function test_complete_assessment_full_scores(): void
     {
         $assessmentId = $this->startAssessment();
 
-        // VCI: A (FREE_TEXT, 10 questions × 2pts) + B (FREE_TEXT, 10 questions × 2pts)
-        foreach (['A', 'B'] as $subtest) {
-            $questions = $this->getQuestions($assessmentId, $subtest);
-            $answers = array_map(
-                fn ($q) => ['question_id' => $q['id'], 'response' => '最高得点回答', 'awarded_score' => 2],
-                $questions
-            );
-            $this->postJson("/api/assessments/{$assessmentId}/subtests/{$subtest}/answers", ['answers' => $answers])
-                ->assertStatus(200);
-        }
+        // A: 言語整理 (FREE_TEXT, 6q × 2pts = 12)
+        $questionsA = $this->getQuestions($assessmentId, 'A');
+        $answersA = array_map(
+            fn ($q) => ['question_id' => $q['id'], 'response' => '最高得点回答', 'awarded_score' => 2],
+            $questionsA
+        );
+        $this->postJson("/api/assessments/{$assessmentId}/subtests/A/answers", ['answers' => $answersA])
+            ->assertStatus(200);
 
-        // PRI: C (MULTIPLE_CHOICE correct='B', 12q) + D (MULTIPLE_CHOICE correct='B', 10q)
-        foreach (['C', 'D'] as $subtest) {
-            $questions = $this->getQuestions($assessmentId, $subtest);
-            $answers = array_map(
-                fn ($q) => ['question_id' => $q['id'], 'response' => 'B', 'awarded_score' => null],
-                $questions
-            );
-            $this->postJson("/api/assessments/{$assessmentId}/subtests/{$subtest}/answers", ['answers' => $answers])
-                ->assertStatus(200);
-        }
+        // B: 構造理解 (MULTIPLE_CHOICE, correct='B', 6q × 1pt = 6)
+        $questionsB = $this->getQuestions($assessmentId, 'B');
+        $answersB = array_map(
+            fn ($q) => ['question_id' => $q['id'], 'response' => 'B', 'awarded_score' => null],
+            $questionsB
+        );
+        $this->postJson("/api/assessments/{$assessmentId}/subtests/B/answers", ['answers' => $answersB])
+            ->assertStatus(200);
 
-        // WMI: E (SEQUENCE correct='123', 18q) + F (MULTIPLE_CHOICE correct='A', 10q)
-        $questionsE = $this->getQuestions($assessmentId, 'E');
-        $answersE = array_map(
+        // C: 保持操作 (SEQUENCE, correct='123', 6q × 1pt = 6)
+        $questionsC = $this->getQuestions($assessmentId, 'C');
+        $answersC = array_map(
             fn ($q) => ['question_id' => $q['id'], 'response' => '123', 'awarded_score' => null],
-            $questionsE
+            $questionsC
         );
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/E/answers", ['answers' => $answersE])
+        $this->postJson("/api/assessments/{$assessmentId}/subtests/C/answers", ['answers' => $answersC])
             ->assertStatus(200);
 
-        $questionsF = $this->getQuestions($assessmentId, 'F');
-        $answersF = array_map(
-            fn ($q) => ['question_id' => $q['id'], 'response' => 'A', 'awarded_score' => null],
-            $questionsF
-        );
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/F/answers", ['answers' => $answersF])
-            ->assertStatus(200);
-
-        // PSI: G (TIME_BASED / Symbol Search) + H (TIME_BASED / Coding)
-        $questionsG = $this->getQuestions($assessmentId, 'G');
-        $answersG = array_map(
+        // D: 速度耐性 (TIME_BASED, 6q)
+        $questionsD = $this->getQuestions($assessmentId, 'D');
+        $answersD = array_map(
             fn ($q) => ['question_id' => $q['id'], 'response' => '○', 'awarded_score' => null],
-            $questionsG
+            $questionsD
         );
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/G/answers", [
-            'answers' => $answersG, 'elapsed_seconds' => 120,
-        ])->assertStatus(200);
-
-        $questionsH = $this->getQuestions($assessmentId, 'H');
-        $answersH = array_map(
-            fn ($q) => ['question_id' => $q['id'], 'response' => 'A', 'awarded_score' => null],
-            $questionsH
-        );
-        $this->postJson("/api/assessments/{$assessmentId}/subtests/H/answers", [
-            'answers' => $answersH, 'elapsed_seconds' => 120,
+        $this->postJson("/api/assessments/{$assessmentId}/subtests/D/answers", [
+            'answers' => $answersD, 'elapsed_seconds' => 60,
         ])->assertStatus(200);
 
         $report = $this->getJson("/api/assessments/{$assessmentId}/report")->assertStatus(200);
 
         $indexScores = $report->json('data.indexScores');
 
-        // VCI: 10×2 + 10×2 = 40 (max 40)
+        // VCI: 6×2 = 12 (max 12)
         $vci = $this->findIndexScore($indexScores, 'VCI');
-        $this->assertEquals(40.0, $vci['rawScore'], 'VCI should be 40 (perfect score)');
-        $this->assertEquals(40, $vci['maxScore'], 'VCI max score should be 40');
+        $this->assertEquals(12.0, $vci['rawScore'], 'VCI should be 12 (perfect score)');
+        $this->assertEquals(12, $vci['maxScore'], 'VCI max score should be 12');
         $this->assertEquals(100.0, $vci['percentage'], 'VCI percentage should be 100%');
 
-        // WMI: 18×1 + 10×1 = 28 (max 28)
+        // WMI: 6×1 = 6 (max 6)
         $wmi = $this->findIndexScore($indexScores, 'WMI');
-        $this->assertEquals(28.0, $wmi['rawScore'], 'WMI should be 28 (perfect score)');
-        $this->assertEquals(28, $wmi['maxScore'], 'WMI max score should be 28');
+        $this->assertEquals(6.0, $wmi['rawScore'], 'WMI should be 6 (perfect score)');
+        $this->assertEquals(6, $wmi['maxScore'], 'WMI max score should be 6');
         $this->assertEquals(100.0, $wmi['percentage'], 'WMI percentage should be 100%');
     }
 
@@ -465,13 +393,9 @@ final class AssessmentApiTest extends TestCase
     {
         $defaultAnswers = [
             'A' => ['response' => '回答', 'awarded_score' => 1],
-            'B' => ['response' => '回答', 'awarded_score' => 1],
-            'C' => ['response' => 'B', 'awarded_score' => null],
-            'D' => ['response' => 'B', 'awarded_score' => null],
-            'E' => ['response' => '123', 'awarded_score' => null],
-            'F' => ['response' => 'A', 'awarded_score' => null],
-            'G' => ['response' => '○', 'awarded_score' => null],
-            'H' => ['response' => 'A', 'awarded_score' => null],
+            'B' => ['response' => 'B', 'awarded_score' => null],
+            'C' => ['response' => '123', 'awarded_score' => null],
+            'D' => ['response' => '○', 'awarded_score' => null],
         ];
 
         foreach ($defaultAnswers as $subtest => $defaults) {
@@ -486,8 +410,8 @@ final class AssessmentApiTest extends TestCase
             );
 
             $payload = ['answers' => $answers];
-            if (in_array($subtest, ['G', 'H'], true)) {
-                $payload['elapsed_seconds'] = 120;
+            if ($subtest === 'D') {
+                $payload['elapsed_seconds'] = 60;
             }
 
             $this->postJson("/api/assessments/{$assessmentId}/subtests/{$subtest}/answers", $payload)
@@ -529,22 +453,14 @@ final class AssessmentApiTest extends TestCase
     private function seedQuestions(): void
     {
         $subtestData = [
-            // A: Similarities (10 questions, free_text, max 2 pts)
-            'A' => ['count' => 10, 'type' => 'free_text', 'max_points' => 2, 'correct' => '正解'],
-            // B: Vocabulary (10 questions, free_text, max 2 pts)
-            'B' => ['count' => 10, 'type' => 'free_text', 'max_points' => 2, 'correct' => '正解'],
-            // C: Pattern Recognition (12 questions, multiple_choice)
-            'C' => ['count' => 12, 'type' => 'multiple_choice', 'max_points' => 1, 'correct' => 'B'],
-            // D: Matrix Reasoning (10 questions, multiple_choice)
-            'D' => ['count' => 10, 'type' => 'multiple_choice', 'max_points' => 1, 'correct' => 'B'],
-            // E: Digit Span (18 sequences, sequence)
-            'E' => ['count' => 18, 'type' => 'sequence', 'max_points' => 1, 'correct' => '123'],
-            // F: Arithmetic (10 questions, multiple_choice)
-            'F' => ['count' => 10, 'type' => 'multiple_choice', 'max_points' => 1, 'correct' => 'A'],
-            // G: Symbol Search (24 questions, time_based)
-            'G' => ['count' => 24, 'type' => 'time_based', 'max_points' => 1, 'correct' => '○'],
-            // H: Coding (60 questions, time_based)
-            'H' => ['count' => 60, 'type' => 'time_based', 'max_points' => 1, 'correct' => 'A'],
+            // A: 言語整理 (24 pool, free_text, max 2 pts)
+            'A' => ['count' => 24, 'type' => 'free_text', 'max_points' => 2, 'correct' => '正解'],
+            // B: 構造理解 (24 pool, multiple_choice, max 1 pt)
+            'B' => ['count' => 24, 'type' => 'multiple_choice', 'max_points' => 1, 'correct' => 'B'],
+            // C: 保持操作 (24 pool, sequence, max 1 pt)
+            'C' => ['count' => 24, 'type' => 'sequence', 'max_points' => 1, 'correct' => '123'],
+            // D: 速度耐性 (24 pool, time_based, max 1 pt)
+            'D' => ['count' => 24, 'type' => 'time_based', 'max_points' => 1, 'correct' => '○'],
         ];
 
         foreach ($subtestData as $subtestType => $data) {

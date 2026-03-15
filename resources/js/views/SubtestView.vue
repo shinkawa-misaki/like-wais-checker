@@ -25,7 +25,7 @@
         </div>
         <!-- 全体進捗 -->
         <div class="text-xs text-gray-400 whitespace-nowrap">
-          サブテスト {{ store.completedSubtests.length + 1 }}/8
+          セクション {{ store.completedSubtests.length + 1 }}/4
         </div>
       </div>
     </header>
@@ -55,7 +55,7 @@
               <p class="whitespace-pre-line">{{ meta?.instructions }}</p>
             </div>
             <div v-if="meta?.timeLimitSeconds" class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-800">
-              <strong>⏱️ 時間制限：{{ meta.timeLimitSeconds }}秒</strong>
+              <strong>⏱️ 時間制限：{{ Math.floor(meta.timeLimitSeconds / 60) }}分{{ meta.timeLimitSeconds % 60 > 0 ? (meta.timeLimitSeconds % 60) + '秒' : '' }}</strong>
               <br>開始ボタンを押してください。
             </div>
             <div class="flex gap-2 text-sm text-gray-500">
@@ -85,32 +85,10 @@
 
         <!-- 問題フェーズ：通常サブテスト -->
         <template v-else-if="phase === 'questions' && !isTimeBased">
-
-          <!-- 現在の問題 -->
-          <FreeTextQuestion
-            v-if="currentQuestion?.questionType === 'free_text'"
-            :key="`question-${currentIndex}`"
-            :question="currentQuestion"
-            :revealed-answer="currentCorrectAnswer"
-            @confirm="onConfirmResponse"
-            @answered="onAnswered"
-          />
-          <MatrixReasoningQuestion
-            v-else-if="subtestType === 'D'"
-            :key="`question-${currentIndex}`"
-            :question="currentQuestion"
-            @answered="onAnswered"
-          />
           <MultipleChoiceQuestion
-            v-else-if="currentQuestion?.questionType === 'multiple_choice'"
             :key="`question-${currentIndex}`"
             :question="currentQuestion"
-            @answered="onAnswered"
-          />
-          <SequenceQuestion
-            v-else-if="currentQuestion?.questionType === 'sequence'"
-            :key="`question-${currentIndex}`"
-            :question="currentQuestion"
+            :time-limit-seconds="meta?.questionTimeLimitSeconds ?? null"
             @answered="onAnswered"
           />
         </template>
@@ -127,7 +105,7 @@
           <h2 class="text-xl font-bold text-gray-900">{{ meta?.subtestLabel }}　完了！</h2>
 
           <div v-if="!store.isComplete" class="bg-white rounded-xl border border-gray-200 p-5">
-            <p class="text-sm text-gray-600 mb-4">次のサブテストへ進んでください</p>
+            <p class="text-sm text-gray-600 mb-4">次のセクションへ進んでください</p>
             <div class="flex items-center gap-3 text-left">
               <div class="text-3xl">{{ SUBTEST_META[nextSubtest]?.icon }}</div>
               <div>
@@ -155,10 +133,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAssessmentStore, SUBTEST_ORDER, SUBTEST_META } from '../stores/assessment.js';
-import FreeTextQuestion from '../components/FreeTextQuestion.vue';
 import MultipleChoiceQuestion from '../components/MultipleChoiceQuestion.vue';
-import MatrixReasoningQuestion from '../components/MatrixReasoningQuestion.vue';
-import SequenceQuestion from '../components/SequenceQuestion.vue';
 import TimedSubtest from '../components/TimedSubtest.vue';
 
 const props = defineProps({
@@ -176,7 +151,6 @@ const currentIndex = ref(0);
 const nextSubtest = ref(null);
 
 const currentQuestion = computed(() => questions.value[currentIndex.value] || null);
-const currentCorrectAnswer = ref(null);
 const isTimeBased = computed(() => meta.value?.timeLimitSeconds !== null);
 const subtestProgress = computed(() =>
     questions.value.length > 0
@@ -200,19 +174,6 @@ async function load() {
     phase.value = 'intro';
 }
 
-// FREE_TEXT: 回答確定時に保存して模範解答を取得
-async function onConfirmResponse(answer) {
-    try {
-        const result = await store.saveAnswer(props.subtestType, answer);
-        currentCorrectAnswer.value = result?.correctAnswer ?? '';
-    } catch (e) {
-        const serverMsg = e.response?.data?.error;
-        store.error = serverMsg
-            ? `回答の保存に失敗しました: ${serverMsg}`
-            : '回答の保存に失敗しました。もう一度お試しください。';
-    }
-}
-
 async function onAnswered(answer) {
     // 1問ずつ即座にDBへ保存（FREE_TEXT は採点スコアの更新のみ）
     try {
@@ -225,7 +186,6 @@ async function onAnswered(answer) {
         return;
     }
 
-    currentCorrectAnswer.value = null;
     collectedAnswers.value.push(answer);
     if (currentIndex.value < questions.value.length - 1) {
         currentIndex.value++;
@@ -252,7 +212,7 @@ async function completeSubtest() {
 
 function goNext() {
     if (store.isComplete) {
-        router.push({ name: 'report' });
+        router.push({ name: 'condition-check' });
     } else {
         router.push({ name: 'subtest', params: { subtestType: nextSubtest.value } });
     }

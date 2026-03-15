@@ -30,7 +30,7 @@ describe('DisclaimerView', () => {
     it('免責事項が表示される', () => {
         const { wrapper } = makeWrapper();
         expect(wrapper.text()).toContain('重要な注意');
-        expect(wrapper.text()).toContain('WAIS');
+        expect(wrapper.text()).toContain('標準化された心理検査');
     });
 
     it('4つのチェックボックスが表示される', () => {

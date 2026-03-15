@@ -19,7 +19,7 @@
         <ul class="space-y-2 list-none">
           <li class="flex gap-2">
             <span class="text-amber-500 shrink-0">•</span>
-            <span>これはWAIS（標準化検査）<strong>ではありません</strong>。年齢別ノームがないため、正式なIQは算出できません。</span>
+            <span>これは標準化された心理検査<strong>ではありません</strong>。年齢別ノームがないため、正式なIQは算出できません。</span>
           </li>
           <li class="flex gap-2">
             <span class="text-amber-500 shrink-0">•</span>
@@ -90,7 +90,7 @@ const checklist = ref([
     { id: 'quiet', label: '静かな場所にいる', checked: false },
     { id: 'nodic', label: '検索・辞書・電卓を使わないことに同意する', checked: false },
     { id: 'health', label: '体調は問題ない（睡眠・疲労など）', checked: false },
-    { id: 'time', label: '30〜40分の時間を確保した', checked: false },
+    { id: 'time', label: '10〜20分の時間を確保した', checked: false },
 ]);
 
 const allChecked = computed(() => checklist.value.every(item => item.checked));
