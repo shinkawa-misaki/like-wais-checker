@@ -19,7 +19,7 @@
         <ul class="space-y-2 list-none">
           <li class="flex gap-2">
             <span class="text-amber-500 shrink-0">•</span>
-            <span>これはWAIS（標準化検査）<strong>ではありません</strong>。年齢別ノームがないため、正式なIQは算出できません。</span>
+            <span>これは標準化された心理検査<strong>ではありません</strong>。年齢別ノームがないため、正式なIQは算出できません。</span>
           </li>
           <li class="flex gap-2">
             <span class="text-amber-500 shrink-0">•</span>

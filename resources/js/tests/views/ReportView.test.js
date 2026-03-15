@@ -9,7 +9,7 @@ vi.mock('@/api/assessment.js');
 
 const mockReport = {
     generatedAt: '2026-03-04 12:00:00',
-    disclaimer: 'これは正式なWAIS検査ではありません。',
+    disclaimer: 'これは標準化された心理検査ではありません。',
     indexScores: [
         { indexType: 'VCI', label: '言語理解', rawScore: 18, maxScore: 24, percentage: 75, level: 'やや高め' },
         { indexType: 'PRI', label: '知覚推理', rawScore: 14, maxScore: 24, percentage: 58, level: '平均的' },
@@ -69,7 +69,7 @@ describe('ReportView', () => {
     it('免責事項が表示される', async () => {
         const { wrapper } = makeWrapper();
         await flushPromises();
-        expect(wrapper.text()).toContain('これは正式なWAIS検査ではありません。');
+        expect(wrapper.text()).toContain('これは標準化された心理検査ではありません。');
     });
 
     it('4指数スコアがすべて表示される', async () => {
